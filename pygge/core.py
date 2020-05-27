@@ -21,6 +21,8 @@ __email__ = "liam.huber@gmail.com"
 __status__ = "development"
 __date__ = "May 11, 2020"
 
+ANCHOR_POSITIONS = ['upper left', 'center']
+
 
 class Canvas:
     """
@@ -180,8 +182,8 @@ class Graphic(Canvas):
         depth (int): How many layers of parent graphics exist above this one.
     """
     position = TwoDee('position')
-    anchor = IsOneOfThese('anchor', 'upper left', 'center')
-    coordinate_frame = IsOneOfThese('coordinate_frame', 'upper left', 'center')
+    anchor = IsOneOfThese('anchor', *ANCHOR_POSITIONS)
+    coordinate_frame = IsOneOfThese('coordinate_frame', *ANCHOR_POSITIONS)
 
     def __init__(
             self,
@@ -354,7 +356,11 @@ class Text(Graphic):
         font (str): The path to a font which is loadable by PIL's `ImageFont.truetype` method (e.g. '.ttf' files).
         font_size (int): The font to_rescale. (Default is 14.)
         font_color (str): The font color as a hex code or html name. (Default is 'black'.)
+        font_anchor ('upper left'/'center'): Where in the graphic the font should be anchored. (Default is
+            'upper left'.)
     """
+
+    font_anchor = IsOneOfThese('font_anchor', *ANCHOR_POSITIONS)
 
     def __init__(
             self,
@@ -369,7 +375,9 @@ class Text(Graphic):
             content=None,
             font=None,
             font_size=14,
-            font_color='black'):
+            font_color='black',
+            font_anchor='upper left'
+    ):
         super().__init__(
             size,
             color=color,
@@ -384,23 +392,29 @@ class Text(Graphic):
         self.font = font
         self.font_size = font_size
         self.font_color = font_color
+        self.font_anchor = font_anchor.lower()
 
     def _prepare_image(self):
         image = Image.new("RGBA", self.size.inttuple, self.color)
         text = str(self.content)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(self.font, size=self.font_size)
-        xy = self._get_pos_from_anchor(draw, text, font)
+        textsize = draw.textsize(text, font=font)
+        self._ensure_leq(textsize, self.size)
+        xy = self._get_font_position(textsize)
         draw.text(xy, text, fill=self.font_color, font=font, anchor='L')
         self._image = image
 
-    def _get_pos_from_anchor(self, draw, text, font):
-        if self.anchor == 'upper left':
+    def _get_font_position(self, textsize):
+        if self.font_anchor == 'upper left':
             return 0, 0
-        elif self.anchor == 'center':
-            return (0.5 * (self.size - draw.textsize(text, font=font))).inttuple
-        else:
-            raise ValueError("Expected an anchor of 'upper left' or 'center' but got {}".format(self.anchor))
+        elif self.font_anchor == 'center':
+            return (0.5 * (self.size - textsize)).inttuple
+
+    @staticmethod
+    def _ensure_leq(size, bounds):
+        if not np.all(size <= np.array(bounds)):
+            raise ValueError("{} is not always <= {}".format(size, bounds))
 
 
 class TextBox(Text):
@@ -413,6 +427,8 @@ class TextBox(Text):
         font (str): The path to a font which is loadable by PIL's `ImageFont.truetype` method (e.g. '.ttf' files).
         font_size (int): The font to_rescale. (Default is 14.)
         font_color (str): The font color as a hex code or html name. (Default is 'black'.)
+        font_anchor ('upper left'/'center'): Where in the graphic the font should be anchored. (Default is
+            'upper left'.)
     """
 
     @staticmethod
@@ -422,8 +438,9 @@ class TextBox(Text):
     def _prepare_image(self):
         image = Image.new("RGBA", self.size.inttuple, self.color)
         draw = ImageDraw.Draw(image)
-        wrapped, resized_font = self._shrink_to_box(str(self.content), draw)
-        xy = self._get_pos_from_anchor(draw, wrapped, resized_font)
+        wrapped, resized_font, wrapped_size = self._shrink_to_box(str(self.content), draw)
+        self._ensure_leq(wrapped_size, self.size)
+        xy = self._get_font_position(wrapped_size)
         draw.multiline_text(xy, wrapped, fill=self.font_color, font=resized_font, anchor='L')
         self._image = image
 
@@ -447,7 +464,7 @@ class TextBox(Text):
             if wrapped_size[1] <= self.size[1]:
                 break
             font_size -= 2
-        return wrapped, font
+        return wrapped, font, wrapped_size
 
     def _fit_width(self, text, draw, font):
         """

@@ -205,7 +205,7 @@ class TestChildren(CanCompareImagesToArrays):
         ]))
 
 
-class TestPicture(CanCompareImagesToArrays):
+class TestPicture(unittest.TestCase):
 
     content = 'picture.png'
 
@@ -255,3 +255,48 @@ class TestPicture(CanCompareImagesToArrays):
         img = self.p.image
         self.assertTrue(np.all(img.size <= self.p.size))
         self.assertGreaterEqual(np.sum(img.size == self.p.size), 1)
+
+
+class TestText(unittest.TestCase):
+
+    def setUp(self):
+        self.t = Text((100, 20), font='../resources/fonts/Roboto-Regular.ttf')
+
+    def test_font_anchor(self):
+        self.t.font_anchor = 'center'
+        self.t.font_anchor = 'upper left'
+        self.assertRaises(ValueError, setattr, self.t, 'font_anchor', 'NOT_AN_ANCHOR')
+
+    def test_ensure_leq(self):
+        self.t._ensure_leq((1, 2), (3, 4))
+        self.assertRaises(ValueError, self.t._ensure_leq, (3, 4), (1, 2))
+
+    def test_get_font_position(self):
+        self.assertEqual(self.t._get_font_position((100, 20)), (0, 0))
+        self.t.font_anchor = 'center'
+        self.assertEqual(self.t._get_font_position((102, 22)), (-1, -1))
+
+    def test_prepare_image(self):
+        self.t.content = 'Some text'
+        self.assertIsInstance(self.t.image, Image.Image)
+        self.t.font_size = 30
+        self.assertRaises(ValueError, self.t.render)
+
+
+class TestTextBox(unittest.TestCase):
+
+    lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ' \
+                  'labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris ' \
+                  'nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' \
+                  'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non ' \
+                  'proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+
+    def setUp(self):
+        self.t = TextBox((300, 200), font='../resources/fonts/Roboto-Regular.ttf')
+
+    def test_prepare_image(self):
+        self.t.content = self.lorem_ipsum
+        self.assertIsInstance(self.t.image, Image.Image)
+        self.t.font_size = 30
+        self.t.render()
+        self.assertIsInstance(self.t.image, Image.Image)
