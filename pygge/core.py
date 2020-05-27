@@ -10,7 +10,7 @@ from textwrap import wrap as textwrap
 from copy import deepcopy
 
 """
-A base class for building on PIL images.
+Base classes for allowing simple graphic design on top of PIL Images.
 """
 
 __author__ = "Liam Huber"
@@ -50,6 +50,7 @@ class Graphic:
         image (PIL.Image): The actual visual being rendered.
         depth (int): How many layers of parent graphics exist above this one.
     """
+
     size = Positive('size')
     position = TwoDee('position')
     coordinate_frame = IsOneOfThese('coordinate_frame', *ANCHOR_POSITIONS)
@@ -321,7 +322,7 @@ class Picture(Graphic):
 
 class Text(Graphic):
     """
-    A graphic for putting text in a picture.
+    A graphic for putting text in a picture. Can be added as-is or wrapped and shrunk to make a text box.
 
     Attributes:
         (all the attributes of a Graphic plus...)
