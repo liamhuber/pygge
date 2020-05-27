@@ -3,7 +3,7 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 import unittest
-from pygge.core import Canvas, Graphic, Picture, Text, TextBox
+from pygge.core import Graphic, Graphic, Picture, Text, TextBox
 from pygge.descriptors import PILArray
 import numpy as np
 from PIL import Image
@@ -19,33 +19,22 @@ class CanCompareImagesToArrays(unittest.TestCase):
 class TestCanvas(CanCompareImagesToArrays):
 
     def setUp(self):
-        self.size = (2, 2)
-        np_size = self.size + (4,)  # Final dim is RBGA
+        self.graphic = Graphic((2, 2))
+        self.parent_graphic = Graphic((5, 5))
+        self.oversized = Graphic((self.parent_graphic.size + 5).inttuple, color='black')
+
+        np_size = self.graphic.size.inttuple + (4,)  # Final dim is RBGA
         self.ref_transparent = np.zeros(np_size)
         self.ref_white = np.ones(np_size) * 255
+        self.ref_black = np.zeros(np_size)
+        self.ref_black[..., -1] = 255
 
     def test_init(self):
-        Canvas(self.size)  # Should instantiate fine
-        self.assertRaises(ValueError, Canvas, [1, 2, 3])
-        self.assertRaises(ValueError, Canvas, [0, 0])
-
-    def test_render(self):
-        # Starts transparent
-        c = Canvas(self.size)
-        self.assertImageMatchesArray(c.image, self.ref_transparent)
-
-        # Can set color if we re-render
-        c.color = '#ffff'
-        self.assertImageMatchesArray(c.image, self.ref_transparent)  # Should not update just by setting color
-        c.render()
-        self.assertImageMatchesArray(c.image, self.ref_white)
-
-        # Can initialize with colour, and html names should work OK
-        c = Canvas((2, 2), color='white')
-        self.assertImageMatchesArray(c.image, self.ref_white)
+        self.assertRaises(ValueError, Graphic, [1, 2, 3])
+        self.assertRaises(ValueError, Graphic, [0, 0])
 
     def test_copy(self):
-        c1 = Canvas((2, 2))
+        c1 = Graphic((2, 2))
         c1.render()
         c2 = c1.copy()
         c2.color = 'white'
@@ -54,7 +43,7 @@ class TestCanvas(CanCompareImagesToArrays):
         self.assertImageMatchesArray(c2.image, self.ref_white)
 
     def test_save(self):
-        c1 = Canvas((2, 2), color='white')
+        c1 = Graphic((2, 2), color='white')
         fname = 'tmp.png'
         c1.save(fname)
         img = Image.open(fname)
@@ -63,56 +52,61 @@ class TestCanvas(CanCompareImagesToArrays):
 
     def test_to_pilarray(self):
         for data in [(1, 2), [1, 2], np.array([1, 2])]:
-            self.assertIsInstance(Canvas.to_pilarray(data), PILArray)
-
-
-class TestGraphic(CanCompareImagesToArrays):
-
-    def setUp(self):
-        self.g = Graphic((2, 2))
-        self.c = Canvas((5, 5))
-        self.oversized = Graphic((self.c.size + 5).inttuple, color='black')
+            self.assertIsInstance(Graphic.to_pilarray(data), PILArray)
 
     def test_render(self):
-        self.assertRaises(ValueError, self.g.render)
-        self.g.color = 'white'
-        self.assertImageMatchesArray(self.g.image, 255*np.ones(self.g.size.inttuple + (4,)))
+        # Starts transparent
+        self.assertImageMatchesArray(self.graphic.image, self.ref_transparent)
 
-        self.g.position = (1, 1)
-        self.assertRaises(ValueError, self.g.render)
-        self.g.parent = self.c
-        self.g.render()
+        # Can set color if we re-render
+        self.graphic.color = '#ffff'
+        self.assertImageMatchesArray(self.graphic.image, self.ref_transparent)  # Shouldn't update just by setting color
+        self.graphic.render()
+        self.assertImageMatchesArray(self.graphic.image, self.ref_white)
 
-        oversize = Graphic((self.c.size + (1, 1)))
-        self.c.children.oversize = oversize
-        self.assertRaises(ValueError, self.c.render)
+        # Can set html color names too
+        self.graphic.color = 'black'
+        self.graphic.render()
+        self.assertImageMatchesArray(self.graphic.image, self.ref_black)
+
+        # Can't render if exactly one of parent and position is None
+        self.graphic.position = (1, 1)
+        self.assertRaises(ValueError, self.graphic.render)  # Only position set
+        self.graphic.parent = self.parent_graphic
+        self.graphic.render()  # Both set
+        self.graphic.position = None
+        self.assertRaises(ValueError, self.graphic.render)  # Only parent set
+
+        # Can't render children bigger than their parents
+        self.parent_graphic.children.oversize = self.oversized
+        self.assertRaises(ValueError, self.parent_graphic.render)
 
     def test_render_box(self):
-        self.g.color = 'white'
-        image = self.g.image
+        self.graphic.color = 'white'
+        image = self.graphic.image
 
-        self.g.parent = self.c
-        self.g.position = (0, 0)
-        self.assertEqual(self.g._get_render_box(image), (0, 0, 2, 2))
+        self.graphic.parent = self.parent_graphic
+        self.graphic.position = (0, 0)
+        self.assertEqual(self.graphic._get_render_box(image), (0, 0, 2, 2))
 
-        self.g.coordinate_frame = 'center'
-        self.assertEqual(self.g._get_render_box(image), (2, 2, 4, 4))
+        self.graphic.coordinate_frame = 'center'
+        self.assertEqual(self.graphic._get_render_box(image), (2, 2, 4, 4))
 
-        self.g.anchor = 'center'
-        self.assertEqual(self.g._get_render_box(image), (1, 1, 3, 3))
+        self.graphic.anchor = 'center'
+        self.assertEqual(self.graphic._get_render_box(image), (1, 1, 3, 3))
 
         # Ensure negative values get clipped
-        self.g.coordinate_frame = 'upper left'
-        self.assertEqual(self.g._get_render_box(image), (0, 0, 1, 1))
+        self.graphic.coordinate_frame = 'upper left'
+        self.assertEqual(self.graphic._get_render_box(image), (0, 0, 1, 1))
 
         # Ensure positive values get clipped
         oversized_image = self.oversized.image
-        self.oversized.parent = self.c
+        self.oversized.parent = self.parent_graphic
         self.oversized.position = (1, 1)
         self.assertEqual(self.oversized._get_render_box(oversized_image), (1, 1, 5, 5))
 
     def test_rotation_renderbox(self):
-        c = Canvas((50, 50))
+        c = Graphic((50, 50))
         g = Graphic((20, 30), color='white', anchor='center', coordinate_frame='center')
 
         g.angle = 45
@@ -131,49 +125,48 @@ class TestGraphic(CanCompareImagesToArrays):
         val1 = (-4, 5)
         val2 = (3, 3)
         size = (4, 4)
-        self.assertIsInstance(self.g.clamp_to_size_tuple(val1, size), tuple)
-        self.assertEqual(self.g.clamp_to_size_tuple(val1, size), (0, 4))
-        self.assertEqual(self.g.clamp_to_size_tuple(val2, size), val2)
+        self.assertIsInstance(self.graphic.clamp_to_size_tuple(val1, size), tuple)
+        self.assertEqual(self.graphic.clamp_to_size_tuple(val1, size), (0, 4))
+        self.assertEqual(self.graphic.clamp_to_size_tuple(val2, size), val2)
 
 
 class TestChildren(CanCompareImagesToArrays):
 
     def setUp(self):
-        self.c = Canvas((3, 3))
+        self.parent_graphic = Graphic((3, 3))
         self.g1 = Graphic((2, 2))
         self.g2 = Graphic((1, 1))
 
     def test_child_listing(self):
-        self.c.children.g1 = self.g1
-        self.c.children.g2 = self.g2
-        self.assertEqual(str(self.c.children), "['g1', 'g2']")
-        self.assertEqual(len(self.c.children), 2)
+        self.parent_graphic.children.g1 = self.g1
+        self.parent_graphic.children.g2 = self.g2
+        self.assertEqual(str(self.parent_graphic.children), "['g1', 'g2']")
+        self.assertEqual(len(self.parent_graphic.children), 2)
 
-        self.c.children.g1.remove()
-        self.assertEqual(str(self.c.children), "['g2']")
-        self.assertEqual(len(self.c.children), 1)
+        self.parent_graphic.children.g1.remove()
+        self.assertEqual(str(self.parent_graphic.children), "['g2']")
+        self.assertEqual(len(self.parent_graphic.children), 1)
 
     def test_depth(self):
         self.g1.children.g2 = self.g2
-        self.c.children.g1 = self.g1
+        self.parent_graphic.children.g1 = self.g1
         self.assertEqual(self.g2.depth, 2)
         self.assertEqual(self.g1.depth, 1)
-        self.assertEqual(self.c.depth, 0)
+        self.assertEqual(self.parent_graphic.depth, 0)
 
     def test_render(self):
         # Ensure that the images are ordered according to their layer values
-
-        self.c.children.g2 = self.g2
+        self.parent_graphic.children.g2 = self.g2
         self.g2.color = 'black'
         self.g2.position = (2, 2)
         self.g2.layer = 2
 
-        self.c.children.g1 = self.g1
+        self.parent_graphic.children.g1 = self.g1
         self.g1.color = 'white'
         self.g1.position = (1, 1)
         self.g1.layer = 1
 
-        self.assertImageMatchesArray(self.c.image, np.array([
+        self.assertImageMatchesArray(self.parent_graphic.image, np.array([
            [[0, 0, 0, 0],  # Large transparent L
             [0, 0, 0, 0],
             [0, 0, 0, 0]],
@@ -189,8 +182,8 @@ class TestChildren(CanCompareImagesToArrays):
 
         self.g1.layer = 2
         self.g2.layer = 1
-        self.c.render()
-        self.assertImageMatchesArray(self.c.image, np.array([
+        self.parent_graphic.render()
+        self.assertImageMatchesArray(self.parent_graphic.image, np.array([
             [[0, 0, 0, 0],
              [0, 0, 0, 0],
              [0, 0, 0, 0]],
