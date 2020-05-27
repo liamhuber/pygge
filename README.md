@@ -1,7 +1,7 @@
 # pygge
 
-The python general graphic editor -- pygge (pro. 'piggie') -- is built on top of the python image library -- pillow/PIL 
--- to provide a scriptable image editor.
+Python general graphic editor -- pygge (pro. 'piggie') -- is built on top of the python image library -- pillow/PIL 
+-- to provide a scriptable graphics editor.
 
 The core idea is that a canvas object can contain multiple components whose behaviour is controlled by code. The raw 
 content for these components, be it an image file or text, is then interpreted by the component. This allows the 

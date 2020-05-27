@@ -4,9 +4,10 @@
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from . datatypes import Positive, TwoDee, PILArray
+from . descriptors import Positive, TwoDee, PILArray, IsOneOfThese
 from types import MethodType
 from textwrap import wrap as textwrap
+from copy import deepcopy
 
 """
 A base class for building on PIL images.
@@ -21,19 +22,22 @@ __status__ = "development"
 __date__ = "May 11, 2020"
 
 
-class Graphic:
+class Canvas:
     """
-    A base class for images.
+    A virtual 2d space that holds graphics.
 
     Attributes:
         size (Positive): A tuple for the x and y sizes.
-        color (str): The color (html or hex) of the graphic background. (Default is #0000, transparent.)
-        children (Children): Holds components.
+        color (str): The color (html or hex) of the graphic background. (Default is None, which gives transparent.)
+        children (Children): Holds sub-graphics.
         image (PIL.Image): The actual visual.
+        position (tuple): The position
+        depth (0): Where the canvas sits in the tree of graphics. It must always be the root.
     """
-    size = Positive()
+    size = Positive('size')
+    depth = 0
 
-    def __init__(self, size, color="#0000"):
+    def __init__(self, size, color=None):
         self.size = size
         self.color = color
         self.children = Children(self)
@@ -59,34 +63,61 @@ class Graphic:
         self.children.render()
 
     def _prepare_image(self):
-        self._image = Image.new("RGBA", self.size.inttuple, self.color)
+        self._image = Image.new("RGBA", self.size.inttuple, self.color or '#0000')
 
     def save(self, fp, format=None, **params):
         self.image.save(fp, format=format, **params)
 
-    def to_pilarray(self, x):
+    def copy(self):
+        return deepcopy(self)
+
+    @staticmethod
+    def to_pilarray(x):
+        """
+        Converts an `numpy.ndarray`-like object to a `PILArray` (which is the same, but has a method for converting
+        itself to a tuple of integers).
+        """
         return np.array(x).view(PILArray)
 
 
 class Children:
-    reserved_keys = ['_parent', '_layer_dict', 'n_children']
+    """
+    Manages sub-graphics of a graphic or canvas. Particularly, organizes the rendering behaviour so that sub-graphics
+    with a higher layer value are rendered on top.
+
+    Graphics are added as children by simple assignment, and can then later be removed by calling that child with the
+    `remove()` method.
+
+    Note:
+         Layer values in sub-sub-graphics of two different sub-graphics don't know about each other. Any two graphics
+         which need to know about each other's layer value *must* belong to the same parent graphic.
+    """
+    reserved_keys = ['_parent', 'parent', '_layer_dict']
 
     def __init__(self, parent):
-        self._parent = parent
+        self._parent = None
+        self.parent = parent
         self._layer_dict = {}
-        self.n_children = 0
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, new_parent):
+        if not isinstance(new_parent, Canvas):
+            raise TypeError("Only Canvas objects can have graphics children, but got {}".format(type(new_parent)))
+        self._parent = new_parent
 
     def __setattr__(self, key, value):
         if key in self.reserved_keys:
             super().__setattr__(key, value)
         else:
-            if not isinstance(value, Component):
+            if not isinstance(value, Graphic):
                 raise ValueError('The children can only be graphics but got {}'.format(type(value)))
             value._name = key
-            value._parent = self._parent
+            value.parent = self.parent
             value.remove = MethodType(remove, value)
-            self._layer_dict[key] = value.layer
-            self.n_children += 1
             super().__setattr__(key, value)
 
     def __str__(self):
@@ -94,7 +125,8 @@ class Children:
 
     def _get_just_child_names(self):
         keys = list(self.__dict__.keys())
-        for k in self.reserved_keys:
+        to_remove = np.intersect1d(keys, self.reserved_keys)
+        for k in to_remove:
             keys.remove(k)
         return keys
 
@@ -113,39 +145,64 @@ class Children:
             layers.append(layer)
         return [children[n] for n in np.argsort(layers)]
 
+    def __len__(self):
+        return len(self._get_just_child_names())
+
 
 def remove(child):
-    child._parent.n_children -= 1
-    delattr(child._parent.children._zorder_dict, child._name)
-    delattr(child._parent.children, child._name)
+    delattr(child.parent.children, child.name)
 
 
-class Component(Graphic):
+class Graphic(Canvas):
     """
-    Components are images or text which are added to a canvas in layers.
+    A 2d graphic, possibly holding other sub-graphics.
 
     Attributes:
-        position (TwoDee): Pixels relative to the anchor position to shift the component when applying it to the
-            parent canvas (positive values are right and down for 'upper left' anchor, right and up for 'center').
-        content: The actual meat of the component.
-        layer (int): What order to apply the component to the canvas (lower layers are applied earlier.) (Default is 0.)
-        anchor ('upper left'/'center'): Whether to compare upper left corners of the canvas and component, or centers
-            for applying the component to the canvas.
-        angle (float): How much to rotate the source by in degrees. (Default is 0.)
-        resample: c.f. PIL.resize docs.
+        size (Positive): A tuple for the x and y sizes.
+        color (str): The color (html or hex) of the graphic background. (Default is #0000, transparent.)
+        position (TwoDee): Pixels between the `anchor` of this graphic a the reference point in the parent graphic
+            (which depends on the `coordinates` setting). Meaningless if this is not a sub-graphic of a larger graphic.
+            (Default is None.)
+        anchor ('upper left'/'center'): Whether position indicates the location of the upper-left corner of this graphic
+            or the center of it. (Default is 'upper left'.)
+        coordinate_frame ('upper left'/'center'): Whether position is measured from the upper left corner of the parent
+            graphic (x>0 is right, y>0 is down), or the center of the parent graphic (x>0 is still right, but y>0 is
+            up). (Default is 'upper left'.)
+        layer (int): The relative rendering order inside the parent canvas; higher layers are rendered on top. (Default
+            is 0.)
+        angle (float): How much to rotate the graphic by before pasting it onto the parent canvas.
+        resample: c.f. PIL documentation for pasting.
+        parent (Graphic): The graphic onto which this graphic will be pasted. (Default is None.)
+        name (str): The name by which this graphic is known to its parent. (Automatically filled on assignment to a
+            parent graphic's `children`.)
+        children (Children): Holds sub-graphics to be pasted onto this graphic.
+        image (PIL.Image): The actual visual being rendered.
+        depth (int): How many layers of parent graphics exist above this one.
     """
-    position = TwoDee()
+    position = TwoDee('position')
+    anchor = IsOneOfThese('anchor', 'upper left', 'center')
+    coordinate_frame = IsOneOfThese('coordinate_frame', 'upper left', 'center')
 
-    def __init__(self, size, color='#0000', position=None, content=None, layer=0, anchor='upper left', angle=0, resample=0):
+    def __init__(
+            self,
+            size,
+            color=None,
+            position=None,
+            anchor='upper left',
+            coordinate_frame='upper left',
+            layer=0,
+            angle=0,
+            resample=0
+    ):
         super().__init__(size, color=color)
         self.position = position
-        self._name = None
-        self._parent = None
-        self.content = content
+        self.anchor = anchor.lower()
+        self.coordinate_frame = coordinate_frame.lower()
         self.layer = layer
-        self.anchor = anchor
         self.angle = angle
         self.resample = resample
+        self.parent = None
+        self._name = None
 
     @property
     def name(self):
@@ -155,91 +212,175 @@ class Component(Graphic):
     def name(self, void):
         raise AttributeError("can't set attribute. Name is set on assignment to a component collection.")
 
+    @property
+    def depth(self):
+        try:
+            return self.parent.depth + 1
+        except AttributeError:
+            return 0
+
     def render(self):
-        if self.content is None and self.children.n_children == 0:
-            raise ValueError("Cannot render {} because no content is set and it has no children.".format(self._name))
+        if self.position is not None and self.parent is None:
+            raise ValueError("Position is not None, but this graphic has no parent.")
+        elif self.position is None and self.parent is not None:
+            raise ValueError("Position is None, but this graphic has a parent.")
+        if len(self.children) == 0 and self.color is None:
+            raise ValueError("Cannot render {} because it is soooooo boring.".format(self._name))
         super().render()
+
         if self.angle != 0:
             image = self.image.rotate(self.angle, resample=self.resample, expand=True)
         else:
             image = self.image
-        self._parent.image.paste(image, box=self._get_render_box(image), mask=image)
+
+        if self.parent is None:
+            self._image = image
+        else:
+            if np.any(image.size > self.parent.size):
+                raise ValueError('Child {} too big (size={}) for parent (size={})'.format(
+                    self.name, image.size, self.parent.size.inttuple
+                ))
+            self.parent.image.paste(image, box=self._get_render_box(image), mask=image)
 
     def _get_render_box(self, image):
-        if self.anchor.lower() == 'upper left':
-            return self.position.inttuple + (self.position + image.size).inttuple
-        elif self.anchor.lower() == 'center':
-            position = 0.5*self._parent.size + (1, -1)*self.position
-            return (position - 0.5 * np.array(image.size)).inttuple + (position + 0.5 * np.array(image.size)).inttuple
+        size = self.to_pilarray(image.size)
+
+        if self.coordinate_frame == 'upper left':
+            position = self.position
+        elif self.coordinate_frame == 'center':
+            position = 0.5 * self.parent.size + (1, -1) * self.position
         else:
-            raise ValueError("Expected an anchor of {} or {} but got {}".format('upper left', 'center', self.anchor))
+            raise ValueError("Coordinate frame '{}' not recognized, please use 'upper left' or 'center'.".format(
+                self.coordinate_frame
+            ))
 
-    def get_depth(self, d=0):
-        """Find the distance from this component to the owning game piece."""
-        d += 1
-        try:
-            return self._parent.get_depth(d=d)
-        except AttributeError:
-            return d
+        if self.anchor == 'upper left':
+            shift = self.to_pilarray((0, 0))
+        elif self.anchor == 'center':
+            shift = 0.5 * size
+        else:
+            raise ValueError("Anchor '{}' not recognized, please use 'upper left' or 'center'.".format(self.anchor))
+        corner1 = (position - shift).inttuple
+        corner2 = (corner1 + size).inttuple
+        max_size = self.parent.size.inttuple
+        return self.clamp_to_size_tuple(corner1, max_size) + self.clamp_to_size_tuple(corner2, max_size)
 
-    def set_relative_position(self, relative_position):
-        self.position = np.array(relative_position) * self._parent.size
+    @staticmethod
+    def clamp_to_size_tuple(values, size):
+        return tuple(np.clip(values, (0, 0), size).astype(int))
 
 
-class Picture(Component):
+class Picture(Graphic):
     """
-    A component for putting in a picture.
+    A graphic for holding a picture. Source images will be resized to fit the size of the graphic, leaving empty space
+    if necessitated by the relative aspect ratios. A particular subsection of the source image can be used by providing
+    the `box` attribute, if desired.
 
     Attributes:
+        (all the attributes of a Graphic plus...)
+        content (PIL.Image.Image/str): The image object or path to an image file to use. (Default is None, but it must
+            be provided prior to rendering.)
         box (tuple/list/numpy.ndarray): Four int values giving the top-left and bottom-right of the content to sample.
             (Default is None, which uses the largest box centered in the middle of the content which has the same aspect
             ratio as the size of the component.)
     """
 
-    def __init__(self, size, color='#0000', position=None, content=None, layer=0, anchor='upper left', angle=0, resample=0, box=None):
-        super().__init__(size, color=color, position=position, content=content, layer=layer, anchor=anchor, angle=angle, resample=resample)
+    def __init__(
+            self,
+            size,
+            color='#0000',
+            position=None,
+            layer=0,
+            anchor='upper left',
+            coordinate_frame='upper left',
+            angle=0,
+            resample=0,
+            content=None,
+            box=None):
+        super().__init__(
+            size,
+            color=color,
+            position=position,
+            anchor=anchor,
+            coordinate_frame=coordinate_frame,
+            layer=layer,
+            angle=angle,
+            resample=resample
+        )
+        self.content = content
         self.box = box
 
-    def _ensure_image(self, image):
+    @staticmethod
+    def _ensure_image(image):
         if isinstance(image, Image.Image):
             image = image.convert('RGBA')
         elif isinstance(image, str):
-            if image[0] == '#':
-                image = Image.new('RGBA', self.size.inttuple, image)
-            else:
-                image = Image.open(image).convert('RGBA')
+            image = Image.open(image).convert('RGBA')
         else:
-            raise ValueError("Expected a PIL.Image, hex-code color, or path to an image file.")
+            raise ValueError("Expected a PIL.Image or path to an image file.")
         return image
 
     def _prepare_image(self):
         image = self._ensure_image(self.content)
         if self.box is not None:
             image = image.crop(box=self.box)
-        ratio = self.size / np.array(image.size)
-        if np.all(ratio <= 1):
-            scale = np.amax(ratio)
-        else:
-            scale = np.amin(ratio)
-        new_size = np.array(image.size) * scale
-        image = image.resize(tuple(new_size.astype(int)), resample=self.resample)
-        box = list((0.5 * (new_size - self.size)).inttuple + (0.5 * (new_size + self.size)).inttuple)
-        dx = (box[2] - box[0]) - self.size.inttuple[0]
-        dy = (box[3] - box[1]) - self.size.inttuple[1]
-        box[2] -= dx
-        box[3] -= dy  # To stop stupid rounding errors, TODO: this better
-        image = image.crop(box=box)
+
+        new_size = self._rescale_to_L1_norm_with_locked_aspect_ratio(image.size, self.size)
+        new_size = self.clamp_to_size_tuple(new_size, self.size)
+        image = image.resize(new_size, resample=self.resample)
+
+        # box = list((0.5 * (new_size - self.size)).inttuple + (0.5 * (new_size + self.size)).inttuple)
+        # dx = (box[2] - box[0]) - self.size.inttuple[0]
+        # dy = (box[3] - box[1]) - self.size.inttuple[1]
+        # box[2] -= dx
+        # box[3] -= dy  # To stop stupid rounding errors, TODO: this better
+        # image = image.crop(box=box)
         self._image = image
 
+    @staticmethod
+    def _rescale_to_L1_norm_with_locked_aspect_ratio(to_rescale, reference):
+        ratio = reference / np.array(to_rescale)
+        scale = np.amin(ratio)
+        return np.array(to_rescale) * scale
 
-class Text(Component):
+
+class Text(Graphic):
     """
-    A component with text.
+    A graphic for putting text in a picture.
+
+    Attributes:
+        (all the attributes of a Graphic plus...)
+        content (PIL.Image.Image/str): The text to use. (Default is None, but it must be provided prior to rendering.)
+        font (str): The path to a font which is loadable by PIL's `ImageFont.truetype` method (e.g. '.ttf' files).
+        font_size (int): The font to_rescale. (Default is 14.)
+        font_color (str): The font color as a hex code or html name. (Default is 'black'.)
     """
 
-    def __init__(self, size, color='#0000', position=None, content=None, layer=0, anchor='upper left', angle=0, resample=0,
-                 font=None, font_size=14, font_color='black'):
-        super().__init__(size, color=color, position=position, content=content, layer=layer, anchor=anchor, angle=angle, resample=resample)
+    def __init__(
+            self,
+            size,
+            color='#0000',
+            position=None,
+            layer=0,
+            anchor='upper left',
+            coordinate_frame='upper left',
+            angle=0,
+            resample=0,
+            content=None,
+            font=None,
+            font_size=14,
+            font_color='black'):
+        super().__init__(
+            size,
+            color=color,
+            position=position,
+            anchor=anchor,
+            coordinate_frame=coordinate_frame,
+            layer=layer,
+            angle=angle,
+            resample=resample
+        )
+        self.content = content
         self.font = font
         self.font_size = font_size
         self.font_color = font_color
@@ -254,9 +395,9 @@ class Text(Component):
         self._image = image
 
     def _get_pos_from_anchor(self, draw, text, font):
-        if self.anchor.lower() == 'upper left':
+        if self.anchor == 'upper left':
             return 0, 0
-        elif self.anchor.lower() == 'center':
+        elif self.anchor == 'center':
             return (0.5 * (self.size - draw.textsize(text, font=font))).inttuple
         else:
             raise ValueError("Expected an anchor of 'upper left' or 'center' but got {}".format(self.anchor))
@@ -264,7 +405,14 @@ class Text(Component):
 
 class TextBox(Text):
     """
-    A component with wrapping text.
+    A graphic for wrapping text boxes.
+
+    Attributes:
+        (all the attributes of a Graphic plus...)
+        content (PIL.Image.Image/str): The text to use. (Default is None, but it must be provided prior to rendering.)
+        font (str): The path to a font which is loadable by PIL's `ImageFont.truetype` method (e.g. '.ttf' files).
+        font_size (int): The font to_rescale. (Default is 14.)
+        font_color (str): The font color as a hex code or html name. (Default is 'black'.)
     """
 
     @staticmethod
@@ -273,18 +421,24 @@ class TextBox(Text):
 
     def _prepare_image(self):
         image = Image.new("RGBA", self.size.inttuple, self.color)
-        # text = str(self.content)
         draw = ImageDraw.Draw(image)
-
-        # wrapped = self._get_wrapped_text(text, draw)
-        # resized_font = self._get_shrunk_font(wrapped, draw)
         wrapped, resized_font = self._shrink_to_box(str(self.content), draw)
-
         xy = self._get_pos_from_anchor(draw, wrapped, resized_font)
         draw.multiline_text(xy, wrapped, fill=self.font_color, font=resized_font, anchor='L')
         self._image = image
 
     def _shrink_to_box(self, text, draw):
+        """
+        Uses largest font and least lines which will fit the text inside the graphic to_rescale.
+
+        Args:
+            text (str): The text to shrink.
+            draw (ImageDraw.Draw): A Draw factory for this graphic.
+
+        Returns:
+            (str): The wrapped text with newline '\n' characters as needed.
+            (PIL.ImageFont.FreeTypeFont): The appropriately sized font.
+        """
         font_size = self.font_size
 
         while True:
@@ -296,6 +450,18 @@ class TextBox(Text):
         return wrapped, font
 
     def _fit_width(self, text, draw, font):
+        """
+        Breaks the text into new lines until the width fits inside the graphic width.
+
+        Args:
+            text (str): The text to shrink.
+            draw (ImageDraw.Draw): A Draw factory for this graphic.
+            font (PIL.ImageFont.FreeTypeFont): The font to use (includes its to_rescale).
+
+        Returns:
+            (str): The wrapped text with newline '\n' characters as needed.
+            (tuple): The to_rescale of the wrapped font.
+        """
         n_lines = 1
         while True:
             width = int(len(text) / n_lines)
@@ -305,49 +471,3 @@ class TextBox(Text):
                 break
             n_lines += 1
         return wrapped, wrapped_size
-
-    def _get_wrapped_text(self, text, draw):
-        """
-        Wrap text into multiple lines until the aspect ratio approximates the underlying component.
-
-        Args:
-            text (str): The text to wrap.
-            draw (PIL.ImageDraw.Draw): The drawing tool.
-
-        Returns:
-            (list): The text split into a list with one element for each line.
-        """
-        component_aspect = self.size[1] / self.size[0]
-        font = ImageFont.truetype(self.font, size=self.font_size)
-        n_lines = 1
-        while True:
-            width = int(len(text) / n_lines)
-            wrapped = self.textwrap(text, width=width)
-            wrapped_size = draw.multiline_textsize(wrapped, font=font)
-            wrapped_aspect = wrapped_size[1] / wrapped_size[0]
-            if wrapped_aspect > component_aspect:
-                break
-            n_lines += 1
-        return wrapped
-
-    def _get_shrunk_font(self, wrapped, draw):
-        """
-        Shrink font until the wrapped text fits inside the component's size.
-
-        Args:
-            wrapped (list): The text
-            draw (PIL.ImageDraw.Draw): The drawing tool.
-
-        Returns:
-            (PIL.ImageFont.FreeTypeFont): The resized font.
-        """
-        font_size = self.font_size
-        while True:
-            font = ImageFont.truetype(self.font, size=font_size)
-            text_size = draw.multiline_textsize(wrapped, font=font)
-
-            if np.any(text_size > self.size):
-                font_size -= 2
-            else:
-                break
-        return font
