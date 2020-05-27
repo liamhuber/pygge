@@ -12,7 +12,7 @@ class Foo:
     man2 = MangledDescriptor('man2')
     td = TwoDee('td')
     pos = Positive('pos')
-    allowable_values = [1, '2', [3, 4, 5]]
+    allowable_values = [1, '2', [3, 4, 5], 'foo']
     isone = IsOneOfThese('isone', *allowable_values)
 
     def __init__(self, td=None, td2=None, pos=None, isone=None):
@@ -67,3 +67,4 @@ class TestDescriptors(unittest.TestCase):
         for v in self.foo.allowable_values:
             self.foo.isone = v
         self.assertRaises(ValueError, setattr, self.foo, 'isone', 'not_allowed')
+        self.assertRaises(ValueError, setattr, self.foo, 'isone', 'FOO')  # Wrong case
