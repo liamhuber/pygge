@@ -331,6 +331,8 @@ class Text(Graphic):
         font_color (str): The font color as a hex code or html name. (Default is 'black'.)
         font_anchor ('upper left'/'center'): Where in the graphic the font should be anchored. (Default is
             'upper left'.)
+        wrap_text (bool): Whether to wrap the text (i.e. make a text box by breaking lines and automaticall shrinking
+            the font) or just draw it. (Default is False, just draw it as-is.)
     """
 
     font_anchor = IsOneOfThese('font_anchor', *ANCHOR_POSITIONS)
@@ -349,7 +351,8 @@ class Text(Graphic):
             font=None,
             font_size=14,
             font_color='black',
-            font_anchor='upper left'
+            font_anchor='upper left',
+            wrap_text=False
     ):
         super().__init__(
             size,
@@ -366,16 +369,22 @@ class Text(Graphic):
         self.font_size = font_size
         self.font_color = font_color
         self.font_anchor = font_anchor.lower()
+        self.wrap_text = wrap_text
 
     def _prepare_image(self):
         image = Image.new("RGBA", self.size.inttuple, self.color)
-        text = str(self.content)
         draw = ImageDraw.Draw(image)
-        font = ImageFont.truetype(self.font, size=self.font_size)
-        textsize = draw.textsize(text, font=font)
+        if self.wrap_text:
+            text, font, textsize = self._shrink_to_box(str(self.content), draw)
+            draw_method = draw.multiline_text
+        else:
+            text = str(self.content)
+            font = ImageFont.truetype(self.font, size=self.font_size)
+            textsize = draw.textsize(text, font=font)
+            draw_method = draw.text
         self._ensure_leq(textsize, self.size)
         xy = self._get_font_position(textsize)
-        draw.text(xy, text, fill=self.font_color, font=font, anchor='L')
+        draw_method(xy, text, fill=self.font_color, font=font, anchor='L')
         self._image = image
 
     def _get_font_position(self, textsize):
@@ -389,33 +398,9 @@ class Text(Graphic):
         if not np.all(size <= np.array(bounds)):
             raise ValueError("{} is not always <= {}".format(size, bounds))
 
-
-class TextBox(Text):
-    """
-    A graphic for wrapping text boxes.
-
-    Attributes:
-        (all the attributes of a Graphic plus...)
-        content (PIL.Image.Image/str): The text to use. (Default is None, but it must be provided prior to rendering.)
-        font (str): The path to a font which is loadable by PIL's `ImageFont.truetype` method (e.g. '.ttf' files).
-        font_size (int): The font to_rescale. (Default is 14.)
-        font_color (str): The font color as a hex code or html name. (Default is 'black'.)
-        font_anchor ('upper left'/'center'): Where in the graphic the font should be anchored. (Default is
-            'upper left'.)
-    """
-
     @staticmethod
     def textwrap(text, width):
         return '\n'.join(textwrap(text, width=width))
-
-    def _prepare_image(self):
-        image = Image.new("RGBA", self.size.inttuple, self.color)
-        draw = ImageDraw.Draw(image)
-        wrapped, resized_font, wrapped_size = self._shrink_to_box(str(self.content), draw)
-        self._ensure_leq(wrapped_size, self.size)
-        xy = self._get_font_position(wrapped_size)
-        draw.multiline_text(xy, wrapped, fill=self.font_color, font=resized_font, anchor='L')
-        self._image = image
 
     def _shrink_to_box(self, text, draw):
         """

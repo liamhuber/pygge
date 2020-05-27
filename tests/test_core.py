@@ -3,7 +3,7 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 import unittest
-from pygge.core import Graphic, Graphic, Picture, Text, TextBox
+from pygge.core import Graphic, Picture, Text
 from pygge.descriptors import PILArray
 import numpy as np
 from PIL import Image
@@ -252,8 +252,15 @@ class TestPicture(unittest.TestCase):
 
 class TestText(unittest.TestCase):
 
+    lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ' \
+                  'labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris ' \
+                  'nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' \
+                  'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non ' \
+                  'proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+
     def setUp(self):
         self.t = Text((100, 20), font='../resources/fonts/Roboto-Regular.ttf')
+        self.t_box = Text((300, 200), font='../resources/fonts/Roboto-Regular.ttf', wrap_text=True)
 
     def test_font_anchor(self):
         self.t.font_anchor = 'center'
@@ -275,21 +282,8 @@ class TestText(unittest.TestCase):
         self.t.font_size = 30
         self.assertRaises(ValueError, self.t.render)
 
-
-class TestTextBox(unittest.TestCase):
-
-    lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut ' \
-                  'labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris ' \
-                  'nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' \
-                  'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non ' \
-                  'proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
-
-    def setUp(self):
-        self.t = TextBox((300, 200), font='../resources/fonts/Roboto-Regular.ttf')
-
-    def test_prepare_image(self):
-        self.t.content = self.lorem_ipsum
-        self.assertIsInstance(self.t.image, Image.Image)
-        self.t.font_size = 30
-        self.t.render()
-        self.assertIsInstance(self.t.image, Image.Image)
+        self.t_box.content = self.lorem_ipsum
+        self.assertIsInstance(self.t_box.image, Image.Image)
+        self.t_box.font_size = 30
+        self.t_box.render()
+        self.assertIsInstance(self.t_box.image, Image.Image)
