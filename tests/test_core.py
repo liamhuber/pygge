@@ -129,6 +129,25 @@ class TestCanvas(CanCompareImagesToArrays):
         self.assertEqual(self.graphic.clamp_to_size_tuple(val1, size), (0, 4))
         self.assertEqual(self.graphic.clamp_to_size_tuple(val2, size), val2)
 
+    def test_override_dict_values(self):
+        kw = {'foo': 1, 'bar': 'bar', 'baz': [1, 2, 4]}
+        ref1 = {'foo': 0, 'foo2': 2}
+        ref2 = {'bar': 'bar', 'bar2': 'bar2'}
+        ref3 = {'baz': [1, 2, 3]}
+
+        self.assertEqual(
+            self.graphic._override_dict_values(kw, ref1, ref2, ref3),
+            (
+                {'foo': 1, 'foo2': 2},
+                {'bar': 'bar', 'bar2': 'bar2'},
+                {'baz': [1, 2, 4]}
+            )
+        )
+        self.assertRaises(KeyError, self.graphic._override_dict_values, kw, ref1)
+
+        self.assertIsInstance(self.graphic._override_dict_values(kw, ref1, ref2, ref3), tuple)
+        self.assertIsInstance(self.graphic._override_dict_values(ref1, ref1), dict)
+
 
 class TestChildren(CanCompareImagesToArrays):
 

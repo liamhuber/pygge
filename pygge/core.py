@@ -56,29 +56,28 @@ class Graphic:
     coordinate_frame = IsOneOfThese('coordinate_frame', *ANCHOR_POSITIONS)
     anchor = IsOneOfThese('anchor', *ANCHOR_POSITIONS)
 
-    def __init__(
-            self,
-            size,
-            color=None,
-            position=None,
-            anchor='upper left',
-            coordinate_frame='upper left',
-            layer=0,
-            angle=0,
-            resample=0
-    ):
+    graphic_defaults = {
+        'color': None,
+        'position': None,
+        'anchor': 'upper left',
+        'coordinate_frame': 'upper left',
+        'layer': 0,
+        'angle': 0,
+        'resample': 0
+    }
+
+    def __init__(self, size, **graphic_kwargs):
         self.size = size
-        self.color = color
+        self._set_attributes_using_defaults(graphic_kwargs, self.graphic_defaults)
         self.children = Children(self)
         self._image = None
-        self.position = position
-        self.anchor = anchor.lower()
-        self.coordinate_frame = coordinate_frame.lower()
-        self.layer = layer
-        self.angle = angle
-        self.resample = resample
         self.parent = None
         self._name = 'parent'
+
+    def _set_attributes_using_defaults(self, kwargs, defaults):
+        kwargs = self._override_dict_values(kwargs, defaults)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     @property
     def image(self):
@@ -165,6 +164,40 @@ class Graphic:
         itself to a tuple of integers).
         """
         return np.array(x).view(PILArray)
+
+    @staticmethod
+    def _override_dict_values(new_values, *dicts):
+        """
+        Given one or more dictionaries, overwrite a subset of their values.
+
+        Args:
+            new_values (dict): The new values to use.
+            dicts (dict tuple): The dictionaries to
+
+        Returns:
+             (tuple): The original `dicts` with their values updated by `new_values`.
+
+        Raises:
+            KeyError: When `new_values` has a key not in any dict among `dicts`
+
+        Warning:
+            Only overwrites the *first* occurrence of the new value among the dictionaries.
+        """
+        new_dicts = [dict(dict_) for dict_ in dicts]
+        for k, v in new_values.items():
+            found = False
+            for dict_ in new_dicts:
+                if k in dict_.keys():
+                    dict_[k] = v
+                    found = True
+                    break
+            if not found:
+                raise KeyError("The key '{}'' was not found.".format(k))
+
+        if len(new_dicts) == 1:
+            return new_dicts[0]
+        else:
+            return tuple(new_dicts)
 
 
 class Children:
@@ -261,28 +294,8 @@ class Picture(Graphic):
             ratio as the size of the component.)
     """
 
-    def __init__(
-            self,
-            size,
-            color='#0000',
-            position=None,
-            layer=0,
-            anchor='upper left',
-            coordinate_frame='upper left',
-            angle=0,
-            resample=0,
-            content=None,
-            box=None):
-        super().__init__(
-            size,
-            color=color,
-            position=position,
-            anchor=anchor,
-            coordinate_frame=coordinate_frame,
-            layer=layer,
-            angle=angle,
-            resample=resample
-        )
+    def __init__(self, size, content=None, box=None, **graphic_kwargs):
+        super().__init__(size, **graphic_kwargs)
         self.content = content
         self.box = box
 
@@ -338,38 +351,22 @@ class Text(Graphic):
 
     font_anchor = IsOneOfThese('font_anchor', *ANCHOR_POSITIONS)
 
-    def __init__(
-            self,
-            size,
-            color='#0000',
-            position=None,
-            layer=0,
-            anchor='upper left',
-            coordinate_frame='upper left',
-            angle=0,
-            resample=0,
-            content=None,
-            font=None,
-            font_size=14,
-            font_color='black',
-            font_anchor='upper left',
-            wrap_text=False
-    ):
-        super().__init__(
-            size,
-            color=color,
-            position=position,
-            anchor=anchor,
-            coordinate_frame=coordinate_frame,
-            layer=layer,
-            angle=angle,
-            resample=resample
+    font_defaults = {
+        'font': None,
+        'font_size': 14,
+        'font_color': 'black',
+        'font_anchor': 'upper left'
+    }
+
+    def __init__(self, size, content=None, wrap_text=False, **font_and_graphic_kwargs):
+        font_kwargs, graphic_kwargs = self._override_dict_values(
+            font_and_graphic_kwargs,
+            self.font_defaults,
+            self.graphic_defaults
         )
+        super().__init__(size, **graphic_kwargs)
+        self._set_attributes_using_defaults(font_kwargs, self.font_defaults)
         self.content = content
-        self.font = font
-        self.font_size = font_size
-        self.font_color = font_color
-        self.font_anchor = font_anchor.lower()
         self.wrap_text = wrap_text
 
     def _prepare_image(self):
