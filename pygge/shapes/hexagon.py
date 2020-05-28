@@ -26,11 +26,11 @@ class Hex(Shape):
     def face_angles(self):
         return {
             'n': 0,
-            'wnw': 60,
-            'wsw': 120,
+            'nw': 60,
+            'sw': 120,
             's': 180,
-            'ese': 240,
-            'ene': 300
+            'se': 240,
+            'ne': 300
         }
 
     @property
@@ -40,22 +40,22 @@ class Hex(Shape):
         y = np.sqrt(0.75) * r * np.sin(np.deg2rad(30))
         return self._all_values_to_pilarray({
             'n': (0, h),
-            'wnw': (-x, y),
-            'wsw': (-x, -y),
+            'nw': (-x, y),
+            'sw': (-x, -y),
             's': (0, -h),
-            'ese': (x, -y),
-            'ene': (x, y)
+            'se': (x, -y),
+            'ne': (x, y)
         })
 
     @property
     def corner_angles(self):
         return {
-            'nnw': 30,
+            'nw': 30,
             'w': 90,
-            'ssw': 150,
-            'sse': 210,
+            'sw': 150,
+            'se': 210,
             'e': 270,
-            'nne': 330
+            'ne': 330
         }
 
     @property
@@ -63,12 +63,12 @@ class Hex(Shape):
         r, h = 0.5 * self.size
         x = r * np.sin(np.deg2rad(30))
         return self._all_values_to_pilarray({
-            'nnw': (-x, h),
+            'nw': (-x, h),
             'w': (-r, 0),
-            'ssw': (-x, -h),
-            'sse': (x, -h),
+            'sw': (-x, -h),
+            'se': (x, -h),
             'e': (r, 0),
-            'nne': (x, h),
+            'ne': (x, h),
         })
 
     @property
