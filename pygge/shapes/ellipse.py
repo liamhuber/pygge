@@ -60,7 +60,7 @@ class Ellipse(Shape):
     @property
     def polygon(self):
         w, h = self.size.inttuple
-        return (
+        return tuple([
             (int(0.5 * w * (1 + np.sin(theta))), int(0.5 * h * (1 + np.cos(theta))))
             for theta in np.linspace(start=0, stop=2*np.pi, num=self.curve_resolution, endpoint=False)
-        )
+        ])
