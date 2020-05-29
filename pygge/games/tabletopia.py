@@ -24,6 +24,8 @@ def magnetic_map(shape, color='green', orientable=True, endpoint='n'):
         color ('green'/'blue'/'red'): Map colour. Green is no alteration, blue forces back-up, red forces front-up.
             (Default is 'green').
         orientable (bool): Whether to draw the orienting vector. (Default is True.)
+        endpoint (str): Which compass direction to end the orientation line on (either a face or corner point).
+            (Default is 'n'.)
 
     Returns:
         (PIL.Image): A Tabletopia magnetic map.
