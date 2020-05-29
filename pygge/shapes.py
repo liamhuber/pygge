@@ -79,9 +79,9 @@ class Shape(Graphic):
 
     def render(self):
         super().render()
-        self._image = self._cut_out_shape(self.image)
+        self._image = self.cut_out_shape(self.image)
 
-    def _cut_out_shape(self, image):
+    def cut_out_shape(self, image):
         mask = Image.new('RGBA', self.size.inttuple)
         draw = ImageDraw.Draw(mask)
         draw.polygon(self.polygon, fill='#000')
