@@ -74,11 +74,6 @@ class Graphic:
         self.parent = None
         self._name = 'parent'
 
-    def _set_attributes_using_defaults(self, kwargs, defaults):
-        kwargs = self._override_dict_values(kwargs, defaults)
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
     @property
     def image(self):
         """The image is constructed by rendering all children on top of the graphic's own base image."""
@@ -164,6 +159,21 @@ class Graphic:
         itself to a tuple of integers).
         """
         return np.array(x).view(PILArray)
+
+    def _set_attributes_using_defaults(self, kwargs, defaults):
+        kwargs = self._override_dict_values(kwargs, defaults)
+        self._set_attributes_from_dict(kwargs)
+
+    def _set_attributes_from_dict(self, kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+    def _update_attributes_from_dict(self, kwargs):
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+            else:
+                raise AttributeError("{} has no attribute '{}'".format(self.name, k))
 
     @staticmethod
     def _override_dict_values(new_values, *dicts):
