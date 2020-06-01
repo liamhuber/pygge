@@ -145,6 +145,7 @@ class Shape(Graphic):
         self.add_graphic_to_corner(Picture, name, size, corner, **picture_kwargs)
 
     def add_background(self, name, **picture_kwargs):
+        self._augment_kwargs(picture_kwargs, {'stretch': True})
         self.add_picture_to_center(name, size=self.size, **picture_kwargs)
 
     def add_text(self, name, size, **text_kwargs):

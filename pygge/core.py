@@ -302,12 +302,16 @@ class Picture(Graphic):
         box (tuple/list/numpy.ndarray): Four int values giving the top-left and bottom-right of the content to sample.
             (Default is None, which uses the largest box centered in the middle of the content which has the same aspect
             ratio as the size of the component.)
+        stretch (bool): Whether to expand the content to fit the largest dimension of the picture, or the smallest
+            dimension of the picture. Note: if the content and the picture (or the `box`) have the same aspect ratio,
+            these are the exact same thing. (Default is False, fit smallest dimension.)
     """
 
-    def __init__(self, size, content=None, box=None, **graphic_kwargs):
+    def __init__(self, size, content=None, box=None, stretch=False, **graphic_kwargs):
         super().__init__(size, **graphic_kwargs)
         self.content = content
         self.box = box
+        self.stretch = stretch
 
     @staticmethod
     def _ensure_image(image):
@@ -324,7 +328,7 @@ class Picture(Graphic):
         if self.box is not None:
             image = image.crop(box=self.box)
 
-        new_size = self._rescale_to_L1_norm_with_locked_aspect_ratio(image.size, self.size)
+        new_size = self._rescale_to_L1_norm_with_locked_aspect_ratio(image.size, self.size, self.stretch)
         new_size = self.clamp_to_size_tuple(new_size, self.size)
         image = image.resize(new_size, resample=self.resample)
 
@@ -337,9 +341,12 @@ class Picture(Graphic):
         self._image = image
 
     @staticmethod
-    def _rescale_to_L1_norm_with_locked_aspect_ratio(to_rescale, reference):
+    def _rescale_to_L1_norm_with_locked_aspect_ratio(to_rescale, reference, stretch=False):
         ratio = reference / np.array(to_rescale)
-        scale = np.amin(ratio)
+        if stretch:
+            scale = np.amax(ratio)
+        else:
+            scale = np.amin(ratio)
         return np.array(to_rescale) * scale
 
 
