@@ -138,11 +138,11 @@ class Shape(Graphic):
     def add_picture_to_center(self, name, size, **picture_kwargs):
         self.add_graphic_to_center(Picture, name, size=size, **picture_kwargs)
 
-    def add_picture_to_face(self, name, size, face, **picture_kwargs):
-        self.add_graphic_to_face(Picture, name, size, face, **picture_kwargs)
+    def add_picture_to_face(self, name, size, face, buffer=0, **picture_kwargs):
+        self.add_graphic_to_face(Picture, name, face, buffer=buffer, size=size, **picture_kwargs)
 
-    def add_picture_to_corner(self, name, size, corner, **picture_kwargs):
-        self.add_graphic_to_corner(Picture, name, size, corner, **picture_kwargs)
+    def add_picture_to_corner(self, name, size, corner, buffer=0, **picture_kwargs):
+        self.add_graphic_to_corner(Picture, name, corner, buffer=buffer, size=size, **picture_kwargs)
 
     def add_background(self, name, **picture_kwargs):
         self._augment_kwargs(picture_kwargs, {'stretch': True})
@@ -157,11 +157,11 @@ class Shape(Graphic):
     def add_text_to_center(self, name, size, **text_kwargs):
         self.add_graphic_to_center(Text, name, size=size, **text_kwargs)
 
-    def add_text_to_face(self, name, face, size, **text_kwargs):
-        self.add_graphic_to_face(Text, name, face, size=size, **text_kwargs)
+    def add_text_to_face(self, name, face, size, buffer=0, **text_kwargs):
+        self.add_graphic_to_face(Text, name, face, buffer=buffer, size=size, **text_kwargs)
 
-    def add_text_to_corner(self, name, corner, size, **text_kwargs):
-        self.add_graphic_to_corner(Text, name, corner, size=size, **text_kwargs)
+    def add_text_to_corner(self, name, corner, size, buffer=0, **text_kwargs):
+        self.add_graphic_to_corner(Text, name, corner, buffer=buffer, size=size, **text_kwargs)
 
     def _ensure_textbox_kwargs(self, text_kwargs):
         return self._augment_kwargs(text_kwargs, {'wrap_text': True})
@@ -175,11 +175,11 @@ class Shape(Graphic):
     def add_textbox_to_center(self, name, size, **text_kwargs):
         self.add_text_to_center(name, size, **self._ensure_textbox_kwargs(text_kwargs))
 
-    def add_textbox_to_face(self, name, face, size, **text_kwargs):
-        self.add_text_to_face(name, face, size, **self._ensure_textbox_kwargs(text_kwargs))
+    def add_textbox_to_face(self, name, face, size, buffer=0, **text_kwargs):
+        self.add_text_to_face(name, face, size, buffer=buffer, **self._ensure_textbox_kwargs(text_kwargs))
 
-    def add_textbox_to_corner(self, name, corner, size, **text_kwargs):
-        self.add_text_to_corner(name, corner, size, **self._ensure_textbox_kwargs(text_kwargs))
+    def add_textbox_to_corner(self, name, corner, size, buffer=0, **text_kwargs):
+        self.add_text_to_corner(name, corner, size, buffer=buffer, **self._ensure_textbox_kwargs(text_kwargs))
 
 
 class Hex(Shape):
