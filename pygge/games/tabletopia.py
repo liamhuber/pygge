@@ -52,7 +52,9 @@ class Piece2d(Shape):
     """
 
     def __init__(self, size=None, background=None, **graphic_kwargs):
-        super().__init__(size=size or self.default_size, **graphic_kwargs)
+        if size is None:
+            size = self.default_size
+        super().__init__(size=size, **graphic_kwargs)
         if background is not None:
             self.add_background('background', content=background)
 
