@@ -87,23 +87,23 @@ class TestCanvas(CanCompareImagesToArrays):
 
         self.graphic.parent = self.parent_graphic
         self.graphic.position = (0, 0)
-        self.assertEqual(self.graphic._get_render_box(image), (0, 0, 2, 2))
+        self.assertEqual(self.graphic._get_renderable_image_and_box(image)[1], (0, 0, 2, 2))
 
         self.graphic.coordinate_frame = 'center'
-        self.assertEqual(self.graphic._get_render_box(image), (2, 2, 4, 4))
+        self.assertEqual(self.graphic._get_renderable_image_and_box(image)[1], (2, 2, 4, 4))
 
         self.graphic.anchor = 'center'
-        self.assertEqual(self.graphic._get_render_box(image), (1, 1, 3, 3))
+        self.assertEqual(self.graphic._get_renderable_image_and_box(image)[1], (1, 1, 3, 3))
 
         # Ensure negative values get clipped
         self.graphic.coordinate_frame = 'upper left'
-        self.assertEqual(self.graphic._get_render_box(image), (0, 0, 1, 1))
+        self.assertEqual(self.graphic._get_renderable_image_and_box(image)[1], (0, 0, 1, 1))
 
         # Ensure positive values get clipped
         oversized_image = self.oversized.image
         self.oversized.parent = self.parent_graphic
         self.oversized.position = (1, 1)
-        self.assertEqual(self.oversized._get_render_box(oversized_image), (1, 1, 5, 5))
+        self.assertEqual(self.oversized._get_renderable_image_and_box(oversized_image)[1], (1, 1, 5, 5))
 
     def test_rotation_renderbox(self):
         c = Graphic((50, 50))
@@ -118,8 +118,8 @@ class TestCanvas(CanCompareImagesToArrays):
         g.parent = c
         g.position = (0, 0)
 
-        self.assertEqual(g._get_render_box(image45), (7, 7, 43, 43))
-        self.assertEqual(g._get_render_box(image5), (13, 9, 37, 41))
+        self.assertEqual(g._get_renderable_image_and_box(image45)[1], (7, 7, 43, 43))
+        self.assertEqual(g._get_renderable_image_and_box(image5)[1], (13, 9, 37, 41))
 
     def test_clamp_to_size(self):
         val1 = (-4, 5)

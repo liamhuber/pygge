@@ -119,17 +119,15 @@ class Graphic:
         if self.parent is None:
             self._image = image
         else:
-            if np.any(image.size > self.parent.size):
-                raise ValueError('Child {} too big (size={}) for parent (size={})'.format(
-                    self.name, image.size, self.parent.size.inttuple
-                ))
-            self.parent.image.paste(image, box=self._get_render_box(image), mask=image)
+            cropped_image, render_box = self._get_renderable_image_and_box(image)
+            self.parent.image.paste(cropped_image, box=render_box, mask=cropped_image)
 
     @staticmethod
     def clamp_to_size_tuple(values, size):
         return tuple(np.clip(values, (0, 0), size).astype(int))
 
-    def _get_render_box(self, image):
+    def _get_renderable_image_and_box(self, image):
+        """TODO: Refactor for better encapsulation"""
         size = self.to_pilarray(image.size)
 
         if self.coordinate_frame == 'upper left':
@@ -149,8 +147,14 @@ class Graphic:
             raise ValueError("Anchor '{}' not recognized, please use 'upper left' or 'center'.".format(self.anchor))
         corner1 = (position - shift).inttuple
         corner2 = (corner1 + size).inttuple
+        free_box = corner1 + corner2
         max_size = self.parent.size.inttuple
-        return self.clamp_to_size_tuple(corner1, max_size) + self.clamp_to_size_tuple(corner2, max_size)
+        clamped_box = self.clamp_to_size_tuple(corner1, max_size) + self.clamp_to_size_tuple(corner2, max_size)
+        cropping_offset = np.array(clamped_box) - np.array(free_box)
+        if np.any(cropping_offset != 0):
+            cropping_box = tuple((np.array(cropping_offset) + np.array((0, 0) + image.size)).astype(int))
+            image = image.crop(box=cropping_box)
+        return image, clamped_box
 
     @staticmethod
     def to_pilarray(x):
