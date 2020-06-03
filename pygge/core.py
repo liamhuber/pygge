@@ -112,15 +112,7 @@ class Graphic:
         self.children.render()
 
         if self.angle != 0:
-            image = self.image.rotate(self.angle, resample=self.resample, expand=True)
-        else:
-            image = self.image
-
-        if self.parent is None:
-            self._image = image
-        else:
-            cropped_image, render_box = self._get_renderable_image_and_box(image)
-            self.parent.image.paste(cropped_image, box=render_box, mask=cropped_image)
+            self._image = self.image.rotate(self.angle, resample=self.resample, expand=True)
 
     @staticmethod
     def clamp_to_size_tuple(values, size):
@@ -278,6 +270,8 @@ class Children:
         ordered_children = self._get_children_in_order()
         for child in ordered_children:
             child.render()
+            cropped_image, render_box = child._get_renderable_image_and_box(child.image)
+            self.parent.image.paste(cropped_image, box=render_box, mask=cropped_image)
 
     def _get_children_in_order(self):
         layers = []
