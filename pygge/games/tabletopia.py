@@ -119,12 +119,6 @@ class TileMap(Rectangle):
         raise NotImplementedError
 
     def _add_tile(self, tile, location):
-        # self.add_picture(
-        #     'tile_{}_{}'.format(*location),
-        #     tile.size,
-        #     position=self._location_to_position(location),
-        #     content=tile.image
-        # )
         self.add_graphic(tile.copy(), 'tile_{}_{}'.format(*location), position=self._location_to_position(location))
 
     def get_magnetic_map(self):
