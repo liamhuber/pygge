@@ -360,6 +360,7 @@ class Text(Graphic):
         font_color (str): The font color as a hex code or html name. (Default is 'black'.)
         font_anchor ('upper left'/'center'): Where in the graphic the font should be anchored. (Default is
             'upper left'.)
+        font_offset (numpy.ndarray/tuple/list): Offset in pixels of the text. (Default is (0, 0).)
         wrap_text (bool): Whether to wrap the text (i.e. make a text box by breaking lines and automaticall shrinking
             the font) or just draw it. (Default is False, just draw it as-is.)
     """
@@ -370,7 +371,8 @@ class Text(Graphic):
         'font': None,
         'font_size': 14,
         'font_color': 'black',
-        'font_anchor': 'upper left'
+        'font_anchor': 'upper left',
+        'font_offset': np.array((0, 0))
     }
 
     def __init__(self, size, content=None, wrap_text=False, **font_and_graphic_kwargs):
@@ -402,9 +404,12 @@ class Text(Graphic):
 
     def _get_font_position(self, textsize):
         if self.font_anchor == 'upper left':
-            return 0, 0
+            pos = np.array((0, 0))
         elif self.font_anchor == 'center':
-            return (0.5 * (self.size - textsize)).inttuple
+            pos = np.array((0.5 * (self.size - textsize)).inttuple)
+        else:
+            raise ValueError("Font anchor {} not recognized.".format(self.font_anchor))
+        return pos + self.font_offset
 
     @staticmethod
     def _ensure_leq(size, bounds):
