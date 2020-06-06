@@ -372,19 +372,19 @@ class Text(Graphic):
         'font_size': 14,
         'font_color': 'black',
         'font_anchor': 'upper left',
-        'font_offset': np.array((0, 0))
     }
 
-    def __init__(self, size, content=None, wrap_text=False, **font_and_graphic_kwargs):
+    def __init__(self, size, content=None, wrap_text=False, text_offset=None, **font_and_graphic_kwargs):
         font_kwargs, graphic_kwargs = self._override_dict_values(
             font_and_graphic_kwargs,
             self.font_defaults,
-            self.graphic_defaults
+            self.graphic_defaults,
         )
         super().__init__(size, **graphic_kwargs)
         self._set_attributes_using_defaults(font_kwargs, self.font_defaults)
         self.content = content
         self.wrap_text = wrap_text
+        self.text_offset = text_offset or np.array((0, 0))
 
     def _prepare_image(self):
         image = Image.new("RGBA", self.size.inttuple, self.color)
@@ -409,7 +409,7 @@ class Text(Graphic):
             pos = np.array((0.5 * (self.size - textsize)).inttuple)
         else:
             raise ValueError("Font anchor {} not recognized.".format(self.font_anchor))
-        return pos + self.font_offset
+        return tuple(pos + self.text_offset)
 
     @staticmethod
     def _ensure_leq(size, bounds):
@@ -437,7 +437,7 @@ class Text(Graphic):
         while True:
             font = ImageFont.truetype(self.font, size=font_size)
             wrapped, wrapped_size = self._fit_width(text, draw, font)
-            if wrapped_size[1] <= self.size[1]:
+            if wrapped_size[1] + self.text_offset[1] <= self.size[1]:
                 break
             font_size -= 2
         return wrapped, font, wrapped_size
@@ -460,7 +460,7 @@ class Text(Graphic):
             width = int(len(text) / n_lines)
             wrapped = self.textwrap(text, width=width)
             wrapped_size = draw.multiline_textsize(wrapped, font=font)
-            if wrapped_size[0] <= self.size[0]:
+            if wrapped_size[0] + self.text_offset[0] <= self.size[0]:
                 break
             n_lines += 1
         return wrapped, wrapped_size
