@@ -8,6 +8,7 @@ from pygge.descriptors import PILArray
 import numpy as np
 from PIL import Image
 from os import remove as osremove
+from os.path import dirname, join
 
 
 class CanCompareImagesToArrays(unittest.TestCase):
@@ -294,8 +295,10 @@ class TestText(unittest.TestCase):
                   'proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
 
     def setUp(self):
-        self.t = Text((100, 20), font='../resources/fonts/robotoregular.ttf')
-        self.t_box = Text((300, 200), font='../resources/fonts/robotoregular.ttf', wrap_text=True)
+        resources_parent = dirname(dirname(__file__))
+        font_path = join(resources_parent, 'resources/fonts/Roboto-Regular.ttf')
+        self.t = Text((100, 20), font=font_path)
+        self.t_box = Text((300, 200), font=font_path, wrap_text=True)
 
     def test_font_anchor(self):
         self.t.font_anchor = 'center'
