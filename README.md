@@ -1,6 +1,6 @@
 # pygge
 
-![Travis build status](https://travis-ci.com/github/liamhuber/pygge/pygge.svg?branch=master)
+![Travis build status](https://travis-ci.com/liamhuber/pygge.svg?branch=master)
 
 The overly-ambitiously-named Python general graphic editor -- pygge (pro. 'piggie') -- is built on top of the python 
 image library -- pillow/PIL -- to provide a scriptable graphics editor.
