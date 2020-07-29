@@ -294,8 +294,8 @@ class TestText(unittest.TestCase):
                   'proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
 
     def setUp(self):
-        self.t = Text((100, 20), font='../resources/fonts/Roboto-Regular.ttf')
-        self.t_box = Text((300, 200), font='../resources/fonts/Roboto-Regular.ttf', wrap_text=True)
+        self.t = Text((100, 20), font='../resources/fonts/robotoregular.ttf')
+        self.t_box = Text((300, 200), font='../resources/fonts/robotoregular.ttf', wrap_text=True)
 
     def test_font_anchor(self):
         self.t.font_anchor = 'center'
