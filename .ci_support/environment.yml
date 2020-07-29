@@ -2,5 +2,6 @@ channels:
   - conda-forge
 dependencies:
   - coverage
+  - coveralls
   - numpy =1.18.1
   - pillow =7.1.2
