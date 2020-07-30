@@ -12,11 +12,15 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/liamhuber/pygge",
-    packages=find_packages(),
+    packages=find_packages(exclude=["*tests*", "*.ci_support*", "*demos*", "*resources*"),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD 3",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.7',
+    install_requires=[
+        'numpy>=1.18.1',
+        'pillow>=7.1.2'
+    ]
 )
