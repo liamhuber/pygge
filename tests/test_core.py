@@ -17,7 +17,7 @@ class CanCompareImagesToArrays(unittest.TestCase):
         self.assertTrue(np.all(np.array(image) == array))
 
 
-class TestCanvas(CanCompareImagesToArrays):
+class TestGraphic(CanCompareImagesToArrays):
 
     def setUp(self):
         self.graphic = Graphic((2, 2))
@@ -37,20 +37,18 @@ class TestCanvas(CanCompareImagesToArrays):
         self.assertRaises(ValueError, Graphic,[1, 1], anchor='not an anchor')
 
     def test_copy(self):
-        c1 = Graphic((2, 2))
-        c1.render()
-        c2 = c1.copy()
-        c2.color = 'white'
-        c2.render()
-        self.assertImageMatchesArray(c1.image, self.ref_transparent)
-        self.assertImageMatchesArray(c2.image, self.ref_white)
+        self.graphic.render()
+        g2 = self.graphic.copy()
+        g2.color = 'white'
+        g2.render()
+        self.assertImageMatchesArray(self.graphic.image, self.ref_transparent)
+        self.assertImageMatchesArray(g2.image, self.ref_white)
 
     def test_save(self):
-        c1 = Graphic((2, 2), color='white')
+        self.graphic.color = 'white'
         fname = 'tmp.png'
-        c1.save(fname)
-        img = Image.open(fname)
-        self.assertImageMatchesArray(img, self.ref_white)
+        self.graphic.save(fname)
+        self.assertImageMatchesArray(Image.open(fname), self.ref_white)
         osremove(fname)
 
     def test_to_pilarray(self):
@@ -84,7 +82,7 @@ class TestCanvas(CanCompareImagesToArrays):
         self.parent_graphic.children.oversize = self.oversized
         self.assertRaises(ValueError, self.parent_graphic.render)
 
-    def test_render_box(self):
+    def test_crop_and_box(self):
         self.graphic.color = 'white'
 
         self.graphic.parent = self.parent_graphic
@@ -106,7 +104,7 @@ class TestCanvas(CanCompareImagesToArrays):
         self.oversized.position = (1, 1)
         self.assertEqual(self.oversized.crop_and_box()[1], (1, 1, 5, 5))
 
-    def test_rotation_renderbox(self):
+    def test_rotation(self):
         c = Graphic((50, 50))
         g = Graphic((20, 30), color='white', anchor='center', coordinate_frame='center')
         g.parent = c
