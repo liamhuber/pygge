@@ -33,6 +33,7 @@ class TestCanvas(CanCompareImagesToArrays):
     def test_init(self):
         self.assertRaises(ValueError, Graphic, [1, 2, 3])
         self.assertRaises(ValueError, Graphic, [0, 0])
+        self.assertRaises(AttributeError, Graphic, [1, 1], not_an_attribute='should_raise_error')
 
     def test_copy(self):
         c1 = Graphic((2, 2))
@@ -129,36 +130,6 @@ class TestCanvas(CanCompareImagesToArrays):
         self.assertIsInstance(self.graphic.clamp_to_size_tuple(val1, size), tuple)
         self.assertEqual(self.graphic.clamp_to_size_tuple(val1, size), (0, 4))
         self.assertEqual(self.graphic.clamp_to_size_tuple(val2, size), val2)
-
-    def test_override_dict_values(self):
-        kw = {'foo': 1, 'bar': 'bar', 'baz': [1, 2, 4]}
-        ref1 = {'foo': 0, 'foo2': 2}
-        ref2 = {'bar': 'bar', 'bar2': 'bar2'}
-        ref3 = {'baz': [1, 2, 3]}
-
-        self.assertEqual(
-            self.graphic._override_dict_values(kw, ref1, ref2, ref3),
-            (
-                {'foo': 1, 'foo2': 2},
-                {'bar': 'bar', 'bar2': 'bar2'},
-                {'baz': [1, 2, 4]}
-            )
-        )
-        self.assertRaises(KeyError, self.graphic._override_dict_values, kw, ref1)
-
-        self.assertIsInstance(self.graphic._override_dict_values(kw, ref1, ref2, ref3), tuple)
-        self.assertIsInstance(self.graphic._override_dict_values(ref1, ref1), dict)
-
-    def test_set_attributes_from_dict(self):
-        self.graphic._set_attributes_from_dict({'color': 'green'})
-        self.assertEqual(self.graphic.color, 'green')
-
-    def test_set_attributes_using_defaults(self):
-        defaults = dict(self.graphic.graphic_defaults)
-        defaults['angle'] = 42
-        self.graphic._set_attributes_using_defaults({'color': 'green'}, defaults)
-        self.assertEqual(self.graphic.color, 'green')
-        self.assertEqual(self.graphic.angle, 42)
 
     def test_update_attributes_from_dict(self):
         self.graphic._update_attributes_from_dict({'color': 'green'})

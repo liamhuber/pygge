@@ -29,7 +29,7 @@ class Graphic:
     A 2d graphic, possibly holding other sub-graphics.
 
     Attributes:
-        size (Positive): A tuple for the x and y sizes.
+        size (Positive): A 2-tuple of integers for the x and y sizes.
         color (str): The color (html or hex) of the graphic background. (Default is #0000, transparent.)
         position (TwoDee): Pixels between the `anchor` of this graphic a the reference point in the parent graphic
             (which depends on the `coordinates` setting). Meaningless if this is not a sub-graphic of a larger graphic.
@@ -39,10 +39,10 @@ class Graphic:
         coordinate_frame ('upper left'/'center'): Whether position is measured from the upper left corner of the parent
             graphic (x>0 is right, y>0 is down), or the center of the parent graphic (x>0 is still right, but y>0 is
             up). (Default is 'upper left'.)
-        layer (int): The relative rendering order inside the parent canvas; higher layers are rendered on top. (Default
+        layer (int): The relative rendering order inside the parent graphic; higher layers are rendered on top. (Default
             is 0.)
         angle (float): How much to rotate the graphic by before pasting it onto the parent canvas.
-        resample: c.f. PIL documentation for pasting.
+        resample: cf. PIL documentation for pasting.
         parent (Graphic): The graphic onto which this graphic will be pasted. (Default is None.)
         name (str): The name by which this graphic is known to its parent. (Automatically filled on assignment to a
             parent graphic's `children`.)
@@ -56,19 +56,17 @@ class Graphic:
     coordinate_frame = IsOneOfThese('coordinate_frame', *ANCHOR_POSITIONS)
     anchor = IsOneOfThese('anchor', *ANCHOR_POSITIONS)
 
-    graphic_defaults = {
-        'color': None,
-        'position': None,
-        'anchor': 'upper left',
-        'coordinate_frame': 'upper left',
-        'layer': 0,
-        'angle': 0,
-        'resample': 0
-    }
+    def __init__(self, size, **kwargs):
+        self.color = None
+        self.position = None
+        self.anchor = 'upper left'
+        self.coordinate_frame = 'upper left'
+        self.layer = 0
+        self.angle = 0
+        self.resample = 0
+        self._update_attributes_from_dict(kwargs)
 
-    def __init__(self, size, **graphic_kwargs):
         self.size = size
-        self._set_attributes_using_defaults(graphic_kwargs, self.graphic_defaults)
         self.children = Children(self)
         self._image = None
         self.parent = None
@@ -156,54 +154,12 @@ class Graphic:
         """
         return np.array(x).view(PILArray)
 
-    def _set_attributes_using_defaults(self, kwargs, defaults):
-        kwargs = self._override_dict_values(kwargs, defaults)
-        self._set_attributes_from_dict(kwargs)
-
-    def _set_attributes_from_dict(self, kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
     def _update_attributes_from_dict(self, kwargs):
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
             else:
                 raise AttributeError("{} has no attribute '{}'".format(self.name, k))
-
-    @staticmethod
-    def _override_dict_values(new_values, *dicts):
-        """
-        Given one or more dictionaries, overwrite a subset of their values.
-
-        Args:
-            new_values (dict): The new values to use.
-            dicts (dict tuple): The dictionaries to
-
-        Returns:
-             (tuple): The original `dicts` with their values updated by `new_values`.
-
-        Raises:
-            KeyError: When `new_values` has a key not in any dict among `dicts`
-
-        Warning:
-            Only overwrites the *first* occurrence of the new value among the dictionaries.
-        """
-        new_dicts = [dict(dict_) for dict_ in dicts]
-        for k, v in new_values.items():
-            found = False
-            for dict_ in new_dicts:
-                if k in dict_.keys():
-                    dict_[k] = v
-                    found = True
-                    break
-            if not found:
-                raise KeyError("The key '{}'' was not found.".format(k))
-
-        if len(new_dicts) == 1:
-            return new_dicts[0]
-        else:
-            return tuple(new_dicts)
 
 
 class Children:
@@ -213,6 +169,8 @@ class Children:
 
     Graphics are added as children by simple assignment, and can then later be removed by calling that child with the
     `remove()` method.
+
+    Automatically set the `name` attribute of children on assignement to match their assignment key.
 
     Note:
          Layer ordering in sub-sub-graphics of two different sub-graphics don't know about each other. Any two graphics
@@ -305,11 +263,11 @@ class Picture(Graphic):
             these are the exact same thing. (Default is False, fit smallest dimension.)
     """
 
-    def __init__(self, size, content=None, box=None, stretch=False, **graphic_kwargs):
-        super().__init__(size, **graphic_kwargs)
-        self.content = content
-        self.box = box
-        self.stretch = stretch
+    def __init__(self, size, **kwargs):
+        self.content = None
+        self.box = None
+        self.stretch = False
+        super().__init__(size, **kwargs)
 
     @staticmethod
     def _ensure_image(image):
@@ -330,12 +288,6 @@ class Picture(Graphic):
         new_size = self.clamp_to_size_tuple(new_size, self.size)
         image = image.resize(new_size, resample=self.resample)
 
-        # box = list((0.5 * (new_size - self.size)).inttuple + (0.5 * (new_size + self.size)).inttuple)
-        # dx = (box[2] - box[0]) - self.size.inttuple[0]
-        # dy = (box[3] - box[1]) - self.size.inttuple[1]
-        # box[2] -= dx
-        # box[3] -= dy  # To stop stupid rounding errors, TODO: this better
-        # image = image.crop(box=box)
         self._image = image
 
     @staticmethod
@@ -367,24 +319,15 @@ class Text(Graphic):
 
     font_anchor = IsOneOfThese('font_anchor', *ANCHOR_POSITIONS)
 
-    font_defaults = {
-        'font': None,
-        'font_size': 14,
-        'font_color': 'black',
-        'font_anchor': 'upper left',
-    }
-
-    def __init__(self, size, content=None, wrap_text=False, text_offset=None, **font_and_graphic_kwargs):
-        font_kwargs, graphic_kwargs = self._override_dict_values(
-            font_and_graphic_kwargs,
-            self.font_defaults,
-            self.graphic_defaults,
-        )
-        super().__init__(size, **graphic_kwargs)
-        self._set_attributes_using_defaults(font_kwargs, self.font_defaults)
-        self.content = content
-        self.wrap_text = wrap_text
-        self.text_offset = text_offset or np.array((0, 0))
+    def __init__(self, size, **kwargs):
+        self.font = None
+        self.font_size = 14
+        self.font_color = 'black'
+        self.font_anchor = 'upper left'
+        self.content = None
+        self.wrap_text = False
+        self.text_offset = np.array((0, 0))
+        super().__init__(size, **kwargs)
 
     def _prepare_image(self):
         image = Image.new("RGBA", self.size.inttuple, self.color)
