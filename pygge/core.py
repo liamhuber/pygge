@@ -116,9 +116,23 @@ class Graphic:
     def clamp_to_size_tuple(values, size):
         return tuple(np.clip(values, (0, 0), size).astype(int))
 
-    def _get_renderable_image_and_box(self, image):
-        """TODO: Refactor for better encapsulation"""
-        size = self.to_pilarray(image.size)
+    @staticmethod
+    def to_pilarray(x):
+        """
+        Converts an `numpy.ndarray`-like object to a `PILArray` (which is the same, but has a method for converting
+        itself to a tuple of integers).
+        """
+        return np.array(x).view(PILArray)
+
+    def _update_attributes_from_dict(self, kwargs):
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+            else:
+                raise AttributeError("{} has no attribute '{}'".format(self.name, k))
+
+    def _crop_and_box(self):
+        size = self.to_pilarray(self.image.size)
 
         if self.coordinate_frame == 'upper left':
             position = self.position
@@ -141,25 +155,11 @@ class Graphic:
         max_size = self.parent.size.inttuple
         clamped_box = self.clamp_to_size_tuple(corner1, max_size) + self.clamp_to_size_tuple(corner2, max_size)
         cropping_offset = np.array(clamped_box) - np.array(free_box)
+        image = self.image
         if np.any(cropping_offset != 0):
-            cropping_box = tuple((np.array(cropping_offset) + np.array((0, 0) + image.size)).astype(int))
-            image = image.crop(box=cropping_box)
+            cropping_box = tuple((np.array(cropping_offset) + np.array((0, 0) + self.image.size)).astype(int))
+            image = self.image.crop(box=cropping_box)
         return image, clamped_box
-
-    @staticmethod
-    def to_pilarray(x):
-        """
-        Converts an `numpy.ndarray`-like object to a `PILArray` (which is the same, but has a method for converting
-        itself to a tuple of integers).
-        """
-        return np.array(x).view(PILArray)
-
-    def _update_attributes_from_dict(self, kwargs):
-        for k, v in kwargs.items():
-            if hasattr(self, k):
-                setattr(self, k, v)
-            else:
-                raise AttributeError("{} has no attribute '{}'".format(self.name, k))
 
 
 class Children:
@@ -228,7 +228,7 @@ class Children:
         ordered_children = self._get_children_in_order()
         for child in ordered_children:
             child.render()
-            cropped_image, render_box = child._get_renderable_image_and_box(child.image)
+            cropped_image, render_box = child._crop_and_box()
             self.parent.image.paste(cropped_image, box=render_box, mask=cropped_image)
 
     def _get_children_in_order(self):

@@ -34,7 +34,7 @@ class TestCanvas(CanCompareImagesToArrays):
         self.assertRaises(ValueError, Graphic, [1, 2, 3])
         self.assertRaises(ValueError, Graphic, [0, 0])
         self.assertRaises(AttributeError, Graphic, [1, 1], not_an_attribute='should_raise_error')
-        self.assertEqual(self.oversized.color, 'black')
+        self.assertRaises(ValueError, Graphic,[1, 1], anchor='not an anchor')
 
     def test_copy(self):
         c1 = Graphic((2, 2))
@@ -86,43 +86,39 @@ class TestCanvas(CanCompareImagesToArrays):
 
     def test_render_box(self):
         self.graphic.color = 'white'
-        image = self.graphic.image
 
         self.graphic.parent = self.parent_graphic
         self.graphic.position = (0, 0)
-        self.assertEqual(self.graphic._get_renderable_image_and_box(image)[1], (0, 0, 2, 2))
+        self.assertEqual(self.graphic._crop_and_box()[1], (0, 0, 2, 2))
 
         self.graphic.coordinate_frame = 'center'
-        self.assertEqual(self.graphic._get_renderable_image_and_box(image)[1], (2, 2, 4, 4))
+        self.assertEqual(self.graphic._crop_and_box()[1], (2, 2, 4, 4))
 
         self.graphic.anchor = 'center'
-        self.assertEqual(self.graphic._get_renderable_image_and_box(image)[1], (1, 1, 3, 3))
+        self.assertEqual(self.graphic._crop_and_box()[1], (1, 1, 3, 3))
 
         # Ensure negative values get clipped
         self.graphic.coordinate_frame = 'upper left'
-        self.assertEqual(self.graphic._get_renderable_image_and_box(image)[1], (0, 0, 1, 1))
+        self.assertEqual(self.graphic._crop_and_box()[1], (0, 0, 1, 1))
 
         # Ensure positive values get clipped
-        oversized_image = self.oversized.image
         self.oversized.parent = self.parent_graphic
         self.oversized.position = (1, 1)
-        self.assertEqual(self.oversized._get_renderable_image_and_box(oversized_image)[1], (1, 1, 5, 5))
+        self.assertEqual(self.oversized._crop_and_box()[1], (1, 1, 5, 5))
 
     def test_rotation_renderbox(self):
         c = Graphic((50, 50))
         g = Graphic((20, 30), color='white', anchor='center', coordinate_frame='center')
-
-        g.angle = 45
-        image45 = g.image
-        g.angle = -5
-        g.render()
-        image5 = g.image
-
         g.parent = c
         g.position = (0, 0)
 
-        self.assertEqual(g._get_renderable_image_and_box(image45)[1], (7, 7, 43, 43))
-        self.assertEqual(g._get_renderable_image_and_box(image5)[1], (13, 9, 37, 41))
+        g.angle = 45
+        g.render()
+        self.assertEqual(g._crop_and_box()[1], (7, 7, 43, 43))
+
+        g.angle = -5
+        g.render()
+        self.assertEqual(g._crop_and_box()[1], (13, 9, 37, 41))
 
     def test_clamp_to_size(self):
         val1 = (-4, 5)
