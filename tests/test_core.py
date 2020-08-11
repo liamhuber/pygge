@@ -34,6 +34,7 @@ class TestCanvas(CanCompareImagesToArrays):
         self.assertRaises(ValueError, Graphic, [1, 2, 3])
         self.assertRaises(ValueError, Graphic, [0, 0])
         self.assertRaises(AttributeError, Graphic, [1, 1], not_an_attribute='should_raise_error')
+        self.assertEqual(self.oversized.color, 'black')
 
     def test_copy(self):
         c1 = Graphic((2, 2))
