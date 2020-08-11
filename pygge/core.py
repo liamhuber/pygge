@@ -131,9 +131,8 @@ class Graphic:
             else:
                 raise AttributeError("{} has no attribute '{}'".format(self.name, k))
 
-    def _crop_and_box(self):
-        size = self.to_pilarray(self.image.size)
-
+    @property
+    def _numeric_position(self):
         if self.coordinate_frame == 'upper left':
             position = self.position
         elif self.coordinate_frame == 'center':
@@ -142,15 +141,21 @@ class Graphic:
             raise ValueError("Coordinate frame '{}' not recognized, please use 'upper left' or 'center'.".format(
                 self.coordinate_frame
             ))
+        return position
 
+    @property
+    def _numeric_anchor(self):
         if self.anchor == 'upper left':
-            shift = self.to_pilarray((0, 0))
+            anchor_shift = self.to_pilarray((0, 0))
         elif self.anchor == 'center':
-            shift = 0.5 * size
+            anchor_shift = 0.5 * self.to_pilarray(self.image.size)
         else:
             raise ValueError("Anchor '{}' not recognized, please use 'upper left' or 'center'.".format(self.anchor))
-        corner1 = (position - shift).inttuple
-        corner2 = (corner1 + size).inttuple
+        return anchor_shift
+
+    def _crop_and_box(self):
+        corner1 = (self._numeric_position - self._numeric_anchor).inttuple
+        corner2 = (corner1 + self.to_pilarray(self.image.size)).inttuple
         free_box = corner1 + corner2
         max_size = self.parent.size.inttuple
         clamped_box = self.clamp_to_size_tuple(corner1, max_size) + self.clamp_to_size_tuple(corner2, max_size)
