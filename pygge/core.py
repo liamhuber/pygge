@@ -153,7 +153,7 @@ class Graphic:
             raise ValueError("Anchor '{}' not recognized, please use 'upper left' or 'center'.".format(self.anchor))
         return anchor_shift
 
-    def _crop_and_box(self):
+    def crop_and_box(self):
         corner1 = (self._numeric_position - self._numeric_anchor).inttuple
         corner2 = (corner1 + self.to_pilarray(self.image.size)).inttuple
         free_box = corner1 + corner2
@@ -233,7 +233,7 @@ class Children:
         ordered_children = self._get_children_in_order()
         for child in ordered_children:
             child.render()
-            cropped_image, render_box = child._crop_and_box()
+            cropped_image, render_box = child.crop_and_box()
             self.parent.image.paste(cropped_image, box=render_box, mask=cropped_image)
 
     def _get_children_in_order(self):

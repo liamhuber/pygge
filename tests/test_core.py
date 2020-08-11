@@ -89,22 +89,22 @@ class TestCanvas(CanCompareImagesToArrays):
 
         self.graphic.parent = self.parent_graphic
         self.graphic.position = (0, 0)
-        self.assertEqual(self.graphic._crop_and_box()[1], (0, 0, 2, 2))
+        self.assertEqual(self.graphic.crop_and_box()[1], (0, 0, 2, 2))
 
         self.graphic.coordinate_frame = 'center'
-        self.assertEqual(self.graphic._crop_and_box()[1], (2, 2, 4, 4))
+        self.assertEqual(self.graphic.crop_and_box()[1], (2, 2, 4, 4))
 
         self.graphic.anchor = 'center'
-        self.assertEqual(self.graphic._crop_and_box()[1], (1, 1, 3, 3))
+        self.assertEqual(self.graphic.crop_and_box()[1], (1, 1, 3, 3))
 
         # Ensure negative values get clipped
         self.graphic.coordinate_frame = 'upper left'
-        self.assertEqual(self.graphic._crop_and_box()[1], (0, 0, 1, 1))
+        self.assertEqual(self.graphic.crop_and_box()[1], (0, 0, 1, 1))
 
         # Ensure positive values get clipped
         self.oversized.parent = self.parent_graphic
         self.oversized.position = (1, 1)
-        self.assertEqual(self.oversized._crop_and_box()[1], (1, 1, 5, 5))
+        self.assertEqual(self.oversized.crop_and_box()[1], (1, 1, 5, 5))
 
     def test_rotation_renderbox(self):
         c = Graphic((50, 50))
@@ -114,11 +114,11 @@ class TestCanvas(CanCompareImagesToArrays):
 
         g.angle = 45
         g.render()
-        self.assertEqual(g._crop_and_box()[1], (7, 7, 43, 43))
+        self.assertEqual(g.crop_and_box()[1], (7, 7, 43, 43))
 
         g.angle = -5
         g.render()
-        self.assertEqual(g._crop_and_box()[1], (13, 9, 37, 41))
+        self.assertEqual(g.crop_and_box()[1], (13, 9, 37, 41))
 
     def test_clamp_to_size(self):
         val1 = (-4, 5)
