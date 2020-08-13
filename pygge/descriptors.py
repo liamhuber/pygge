@@ -56,7 +56,7 @@ class Positive(TwoDee):
             raise ValueError("All values must be strictly greater than zero, but got {}".format(value))
 
 
-class Location(MangledDescriptor):
+class Alignment(MangledDescriptor):
     def __set__(self, obj, value):
         setattr(obj, self.name, self.LocationString(value))
 

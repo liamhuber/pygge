@@ -4,7 +4,7 @@
 
 import unittest
 import numpy as np
-from pygge.descriptors import PILArray, MangledDescriptor, TwoDee, Positive, Location
+from pygge.descriptors import PILArray, MangledDescriptor, TwoDee, Positive, Alignment
 
 
 class Foo:
@@ -13,7 +13,7 @@ class Foo:
     td = TwoDee('td')
     pos = Positive('pos')
     allowable_values = [1, '2', [3, 4, 5], 'foo']
-    location = Location('location')
+    location = Alignment('location')
 
     def __init__(self, td=None, td2=None, pos=None, location='upper left'):
         self.td = td

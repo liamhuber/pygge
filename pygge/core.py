@@ -4,7 +4,7 @@
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from . descriptors import Positive, TwoDee, PILArray, Location
+from . descriptors import Positive, TwoDee, PILArray, Alignment
 from types import MethodType
 from textwrap import wrap as textwrap
 from copy import deepcopy
@@ -51,8 +51,8 @@ class Graphic:
 
     size = Positive('size')
     position = TwoDee('position')
-    coordinate_frame = Location('coordinate_frame')
-    anchor = Location('anchor')
+    coordinate_frame = Alignment('coordinate_frame')
+    anchor = Alignment('anchor')
 
     def __init__(self, size, **kwargs):
         self.color = None
@@ -304,7 +304,7 @@ class Text(Graphic):
             the font) or just draw it. (Default is False, just draw it as-is.)
     """
 
-    font_anchor = Location('font_anchor')
+    font_anchor = Alignment('font_anchor')
 
     def __init__(self, size, **kwargs):
         self.font = None
