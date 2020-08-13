@@ -4,7 +4,7 @@
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from . descriptors import Positive, TwoDee, PILArray, IsOneOfThese
+from . descriptors import Positive, TwoDee, PILArray, IsOneOfThese, Location
 from types import MethodType
 from textwrap import wrap as textwrap
 from copy import deepcopy
@@ -53,8 +53,10 @@ class Graphic:
 
     size = Positive('size')
     position = TwoDee('position')
-    coordinate_frame = IsOneOfThese('coordinate_frame', *ANCHOR_POSITIONS)
-    anchor = IsOneOfThese('anchor', *ANCHOR_POSITIONS)
+    # coordinate_frame = IsOneOfThese('coordinate_frame', *ANCHOR_POSITIONS)
+    # anchor = IsOneOfThese('anchor', *ANCHOR_POSITIONS)
+    coordinate_frame = Location('coordinate_frame')
+    anchor = Location('anchor')
 
     def __init__(self, size, **kwargs):
         self.color = None
@@ -133,17 +135,21 @@ class Graphic:
 
     @property
     def _numeric_position(self):
-        if self.coordinate_frame == 'upper left':
+        # if self.coordinate_frame == 'upper left':
+        if self.coordinate_frame.is_upper_left:
             position = self.position
-        elif self.coordinate_frame == 'center':
+        # elif self.coordinate_frame == 'center':
+        elif self.coordinate_frame.is_center:
             position = 0.5 * self.parent.size + (1, -1) * self.position
         return position
 
     @property
     def _numeric_anchor(self):
-        if self.anchor == 'upper left':
+        # if self.anchor == 'upper left':
+        if self.anchor.is_upper_left:
             anchor_shift = self.to_pilarray((0, 0))
-        elif self.anchor == 'center':
+        # elif self.anchor == 'center':
+        elif self.anchor.is_center:
             anchor_shift = 0.5 * self.to_pilarray(self.image.size)
         return anchor_shift
 
@@ -306,7 +312,8 @@ class Text(Graphic):
             the font) or just draw it. (Default is False, just draw it as-is.)
     """
 
-    font_anchor = IsOneOfThese('font_anchor', *ANCHOR_POSITIONS)
+    # font_anchor = IsOneOfThese('font_anchor', *ANCHOR_POSITIONS)
+    font_anchor = Location('font_anchor')
 
     def __init__(self, size, **kwargs):
         self.font = None
@@ -335,9 +342,11 @@ class Text(Graphic):
         self._image = image
 
     def _get_font_position(self, textsize):
-        if self.font_anchor == 'upper left':
+        # if self.font_anchor == 'upper left':
+        if self.font_anchor.is_upper_left:
             pos = np.array((0, 0))
-        elif self.font_anchor == 'center':
+        # elif self.font_anchor == 'center':
+        elif self.font_anchor.is_center:
             pos = np.array((0.5 * (self.size - textsize)).inttuple)
         else:
             raise ValueError("Font anchor {} not recognized.".format(self.font_anchor))
