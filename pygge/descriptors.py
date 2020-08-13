@@ -56,20 +56,6 @@ class Positive(TwoDee):
             raise ValueError("All values must be strictly greater than zero, but got {}".format(value))
 
 
-class IsOneOfThese(MangledDescriptor):
-    """Only allows the attribute to take on certain values."""
-    def __init__(self, name, *args):
-        super().__init__(name)
-        self._allowable_values = []
-        for arg in args:
-            self._allowable_values.append(arg)
-
-    def __set__(self, obj, value):
-        if value is not None and value not in self._allowable_values:
-            raise ValueError("Cannot set {}, it is not in {}".format(value, self._allowable_values))
-        super().__set__(obj, value)
-
-
 class Location(MangledDescriptor):
     def __set__(self, obj, value):
         setattr(obj, self.name, self.LocationString(value))

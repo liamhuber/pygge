@@ -4,7 +4,7 @@
 
 import unittest
 import numpy as np
-from pygge.descriptors import PILArray, MangledDescriptor, TwoDee, Positive, IsOneOfThese, Location
+from pygge.descriptors import PILArray, MangledDescriptor, TwoDee, Positive, Location
 
 
 class Foo:
@@ -13,14 +13,12 @@ class Foo:
     td = TwoDee('td')
     pos = Positive('pos')
     allowable_values = [1, '2', [3, 4, 5], 'foo']
-    isone = IsOneOfThese('isone', *allowable_values)
     location = Location('location')
 
-    def __init__(self, td=None, td2=None, pos=None, isone=None, location='upper left'):
+    def __init__(self, td=None, td2=None, pos=None, location='upper left'):
         self.td = td
         self.td2 = td2
         self.pos = pos
-        self.isone = isone
         self.location = location
 
 
@@ -64,12 +62,6 @@ class TestDescriptors(unittest.TestCase):
         self.assertRaises(ValueError, setattr, self.foo, 'pos', [1, 2, 3])  # Too long
         self.assertRaises(ValueError, setattr, self.foo, 'pos', [1, 0])  # Has a zero
         self.assertRaises(ValueError, setattr, self.foo, 'pos', [-1, 2])  # Has a negative
-
-    def test_isoneofthese(self):
-        for v in self.foo.allowable_values:
-            self.foo.isone = v
-        self.assertRaises(ValueError, setattr, self.foo, 'isone', 'not_allowed')
-        self.assertRaises(ValueError, setattr, self.foo, 'isone', 'FOO')  # Wrong case
 
     def test_location(self):
         self.foo.location = 'upper left'
