@@ -137,10 +137,6 @@ class Graphic:
             position = self.position
         elif self.coordinate_frame == 'center':
             position = 0.5 * self.parent.size + (1, -1) * self.position
-        else:
-            raise ValueError("Coordinate frame '{}' not recognized, please use 'upper left' or 'center'.".format(
-                self.coordinate_frame
-            ))
         return position
 
     @property
@@ -149,8 +145,6 @@ class Graphic:
             anchor_shift = self.to_pilarray((0, 0))
         elif self.anchor == 'center':
             anchor_shift = 0.5 * self.to_pilarray(self.image.size)
-        else:
-            raise ValueError("Anchor '{}' not recognized, please use 'upper left' or 'center'.".format(self.anchor))
         return anchor_shift
 
     def crop_and_box(self):

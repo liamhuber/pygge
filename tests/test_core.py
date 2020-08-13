@@ -34,7 +34,8 @@ class TestGraphic(CanCompareImagesToArrays):
         self.assertRaises(ValueError, Graphic, [1, 2, 3])
         self.assertRaises(ValueError, Graphic, [0, 0])
         self.assertRaises(AttributeError, Graphic, [1, 1], not_an_attribute='should_raise_error')
-        self.assertRaises(ValueError, Graphic,[1, 1], anchor='not an anchor')
+        self.assertRaises(ValueError, Graphic, [1, 1], anchor='not an anchor')
+
 
     def test_copy(self):
         self.graphic.render()
