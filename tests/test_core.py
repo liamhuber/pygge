@@ -208,21 +208,26 @@ class TestPicture(unittest.TestCase):
     def setUpClass(cls):
         image = Image.new('RGBA', (100, 200), 'green')
         image.save(cls.content)
+        cls.content_color = np.array(image)[0, 0].tolist()
 
     @classmethod
     def tearDownClass(cls):
-        osremove('picture.png')
+        osremove(cls.content)
 
     def setUp(self):
         self.p = Picture((200, 100))
         self.p.content = self.content
 
-    def test_ensure_image(self):
-        self.assertRaises(ValueError, self.p._ensure_image, 42)
-        self.assertRaises(FileNotFoundError, self.p._ensure_image, 'not_a_path_to_anything')
+    def test_get_content_as_image(self):
+        self.p.content = 42
+        self.assertRaises(ValueError, self.p._get_content_as_image)
+        self.p.content = 'not/a/path/to/anything'
+        self.assertRaises(FileNotFoundError, self.p._get_content_as_image)
 
-        self.assertIsInstance(self.p._ensure_image(Image.new('RGBA', (100, 100), 'blue')), Image.Image)
-        self.assertIsInstance(self.p._ensure_image(self.content), Image.Image)
+        self.p.content = Image.new('RGBA', (100, 100), 'blue')
+        self.assertIsInstance(self.p._get_content_as_image(), Image.Image)
+        self.p.content = self.content
+        self.assertIsInstance(self.p._get_content_as_image(), Image.Image)
 
     def test_rescale_with_locked_aspect_ratio(self):
         base_size = self.p.size
@@ -247,9 +252,10 @@ class TestPicture(unittest.TestCase):
             self.assertAlmostEqual(to_scale[0]/to_scale[1], rescaled[0]/rescaled[1])
 
     def test_prepare_image(self):
-        img = self.p.image
-        self.assertTrue(np.all(img.size <= self.p.size))
-        self.assertGreaterEqual(np.sum(img.size == self.p.size), 1)
+        self.assertTrue(np.all(self.p.image.size == (50, 100)))  # Content scaled down by 50% to fit inside height
+        self.p.box = (0, 0, 100, 50)
+        self.p.render()
+        self.assertTrue(np.all(self.p.image.size == self.p.size))  # Content has same aspect ratio, so gets scaled up
 
 
 class TestText(unittest.TestCase):

@@ -252,7 +252,7 @@ class Children:
 
 class Picture(Graphic):
     """
-    A graphic for holding a picture. Source images will be resized to fit the size of the graphic, leaving empty space
+    A graphic a picture. Source images will be resized to fit the size of the graphic, leaving empty space
     if necessitated by the relative aspect ratios. A particular subsection of the source image can be used by providing
     the `box` attribute, if desired.
 
@@ -263,51 +263,41 @@ class Picture(Graphic):
         box (tuple/list/numpy.ndarray): Four int values giving the top-left and bottom-right of the content to sample.
             (Default is None, which uses the largest box centered in the middle of the content which has the same aspect
             ratio as the size of the component.)
-        stretch (bool): Whether to expand the content to fit the largest dimension of the picture, or the smallest
-            dimension of the picture. Note: if the content and the picture (or the `box`) have the same aspect ratio,
-            these are the exact same thing. (Default is False, fit smallest dimension.)
     """
 
     def __init__(self, size, **kwargs):
         self.content = None
         self.box = None
-        self.stretch = False
         super().__init__(size, **kwargs)
 
-    @staticmethod
-    def _ensure_image(image):
-        if isinstance(image, Image.Image):
-            image = image.convert('RGBA')
-        elif isinstance(image, str):
-            image = Image.open(image).convert('RGBA')
+    def _get_content_as_image(self):
+        if isinstance(self.content, Image.Image):
+            content = self.content.convert('RGBA')
+        elif isinstance(self.content, str):
+            content = Image.open(self.content).convert('RGBA')
         else:
-            raise ValueError("Expected a PIL.Image or path to an image file.")
-        return image
+            raise ValueError("Picture {} expected content as PIL.Image or path to an image file.".format(self.name))
+        return content
 
     def _prepare_image(self):
-        image = self._ensure_image(self.content)
+        image = self._get_content_as_image()
         if self.box is not None:
             image = image.crop(box=self.box)
 
-        new_size = self._rescale_to_L1_norm_with_locked_aspect_ratio(image.size, self.size, self.stretch)
+        new_size = self._rescale_to_L1_norm_with_locked_aspect_ratio(image.size, self.size)
         new_size = self.clamp_to_size_tuple(new_size, self.size)
         image = image.resize(new_size, resample=self.resample)
 
         self._image = image
 
     @staticmethod
-    def _rescale_to_L1_norm_with_locked_aspect_ratio(to_rescale, reference, stretch=False):
-        ratio = reference / np.array(to_rescale)
-        if stretch:
-            scale = np.amax(ratio)
-        else:
-            scale = np.amin(ratio)
-        return np.array(to_rescale) * scale
+    def _rescale_to_L1_norm_with_locked_aspect_ratio(to_rescale, reference):
+        return np.array(to_rescale) * np.amin(reference / np.array(to_rescale))
 
 
 class Text(Graphic):
     """
-    A graphic for putting text in a picture. Can be added as-is or wrapped and shrunk to make a text box.
+    A graphic for text. Can be added as-is or wrapped and shrunk to make a text box.
 
     Attributes:
         (all the attributes of a Graphic plus...)
