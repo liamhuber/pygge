@@ -3,7 +3,7 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 import unittest
-from pygge.core import Graphic, Picture, Text
+from pygge.core import Graphic, Children, Picture, Text
 from pygge.descriptors import PILArray
 import numpy as np
 from PIL import Image
@@ -35,7 +35,6 @@ class TestGraphic(CanCompareImagesToArrays):
         self.assertRaises(ValueError, Graphic, [0, 0])
         self.assertRaises(AttributeError, Graphic, [1, 1], not_an_attribute='should_raise_error')
         self.assertRaises(ValueError, Graphic, [1, 1], anchor='not an anchor')
-
 
     def test_copy(self):
         self.graphic.render()
@@ -139,6 +138,13 @@ class TestChildren(CanCompareImagesToArrays):
         self.parent_graphic = Graphic((3, 3))
         self.g1 = Graphic((2, 2))
         self.g2 = Graphic((1, 1))
+
+    def test_assignment(self):
+        self.parent_graphic.children.c1 = self.g1
+        self.assertEqual(self.g1.name, 'c1')
+        self.assertRaises(ValueError, setattr, self.parent_graphic.children, 'parent', self.g2)
+        self.assertRaises(TypeError, Children.__init__, 'not_a_graphic')
+        self.assertRaises(TypeError, setattr, self.parent_graphic.children, 'a_child', 'not_a_graphic')
 
     def test_child_listing(self):
         self.parent_graphic.children.g1 = self.g1

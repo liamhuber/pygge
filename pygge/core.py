@@ -195,7 +195,7 @@ class Children:
         if self._parent is not None:
             raise ValueError("Parent is already set")
         if not isinstance(parent, Graphic):
-            raise TypeError("Only Canvas objects can have graphics children, but got {}".format(type(parent)))
+            raise TypeError("Parent must be a {} object, but got {}".format(Graphic.__name__, type(parent)))
         self._parent = parent
 
     def __setattr__(self, key, value):
@@ -203,7 +203,7 @@ class Children:
             super().__setattr__(key, value)
         else:
             if not isinstance(value, Graphic):
-                raise ValueError('The children can only be graphics but got {}'.format(type(value)))
+                raise TypeError('The children can only be graphics but got {}'.format(type(value)))
             value._name = key
             value.parent = self.parent
             value.remove = MethodType(self.child_removal, value)
