@@ -4,7 +4,7 @@
 
 import unittest
 import numpy as np
-from pygge.descriptors import PILArray, MangledDescriptor, TwoDee, Positive, IsOneOfThese
+from pygge.descriptors import PILArray, MangledDescriptor, TwoDee, Positive, IsOneOfThese, Location
 
 
 class Foo:
@@ -14,12 +14,14 @@ class Foo:
     pos = Positive('pos')
     allowable_values = [1, '2', [3, 4, 5], 'foo']
     isone = IsOneOfThese('isone', *allowable_values)
+    location = Location('location')
 
-    def __init__(self, td=None, td2=None, pos=None, isone=None):
+    def __init__(self, td=None, td2=None, pos=None, isone=None, location='upper left'):
         self.td = td
         self.td2 = td2
         self.pos = pos
         self.isone = isone
+        self.location = location
 
 
 class TestDescriptors(unittest.TestCase):
@@ -68,3 +70,12 @@ class TestDescriptors(unittest.TestCase):
             self.foo.isone = v
         self.assertRaises(ValueError, setattr, self.foo, 'isone', 'not_allowed')
         self.assertRaises(ValueError, setattr, self.foo, 'isone', 'FOO')  # Wrong case
+
+    def test_location(self):
+        self.foo.location = 'upper left'
+        self.assertTrue(self.foo.location.is_upper_left)
+        self.assertFalse(self.foo.location.is_center)
+        self.foo.location = 'center'
+        self.assertFalse(self.foo.location.is_upper_left)
+        self.assertTrue(self.foo.location.is_center)
+        self.assertRaises(ValueError, setattr, self.foo, 'location', 'not a valid location')

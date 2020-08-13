@@ -68,3 +68,28 @@ class IsOneOfThese(MangledDescriptor):
         if value is not None and value not in self._allowable_values:
             raise ValueError("Cannot set {}, it is not in {}".format(value, self._allowable_values))
         super().__set__(obj, value)
+
+
+class Location(MangledDescriptor):
+    def __set__(self, obj, value):
+        setattr(obj, self.name, self.LocationString(value))
+
+    class LocationString(str):
+        _ALLOWABLE = ['upper left', 'center']
+
+        def __new__(cls, value='upper left'):
+            if value not in cls._ALLOWABLE:
+                raise ValueError('Location set to "{}" but expected one of: {} or "{}"'.format(
+                    value,
+                    ', '.join('"{}"'.format(ok) for ok in cls._ALLOWABLE[:-1]),
+                    cls._ALLOWABLE[-1]
+                ))
+            return super().__new__(cls, value)
+
+        @property
+        def is_center(self):
+            return self == 'center'
+
+        @property
+        def is_upper_left(self):
+            return self == 'upper left'
