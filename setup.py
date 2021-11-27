@@ -20,7 +20,7 @@ setup(
     ],
     python_requires='>=3.7',
     install_requires=[
-        'numpy>=1.18.1',
-        'pillow>=7.1.2'
+        'numpy>=1.21.4',
+        'pillow>=8.4.0'
     ]
 )
