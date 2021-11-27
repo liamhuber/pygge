@@ -329,7 +329,7 @@ class Text(Graphic):
             draw_method = draw.text
         self._ensure_leq(textsize, self.size)
         xy = self._get_font_position(textsize)
-        draw_method(xy, text, fill=self.font_color, font=font, anchor='L')
+        draw_method(xy, text, fill=self.font_color, font=font)
         self._image = image
 
     def _get_font_position(self, textsize):
