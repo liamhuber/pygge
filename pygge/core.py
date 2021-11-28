@@ -62,13 +62,14 @@ class Graphic:
         self.layer = 0
         self.angle = 0
         self.resample = 0
-        self._update_attributes_from_dict(kwargs)
 
         self.size = size
         self.children = Children(self)
         self._image = None
         self.parent = None
         self._name = 'parent'
+
+        self._update_attributes_from_dict(kwargs)
 
     @property
     def image(self):
