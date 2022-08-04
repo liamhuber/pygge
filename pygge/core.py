@@ -308,7 +308,7 @@ class Text(Graphic):
     font_anchor = Alignment('font_anchor')
 
     def __init__(self, size, **kwargs):
-        self.font = None
+        self.font = ImageFont.load_default()
         self.font_size = 14
         self.font_color = 'black'
         self.font_anchor = 'upper left'
