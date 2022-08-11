@@ -47,7 +47,7 @@ class Float2d:
         return 2
 
     def __repr__(self):
-        return f"TwoDee({self.x}, {self.y})"
+        return f"{self.__class__.__name__}({self.x}, {self.y})"
 
     def __getitem__(self, item):
         if item == 0:
