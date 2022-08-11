@@ -3,7 +3,7 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 from unittest import TestCase
-from pygge.data_types import _is_2d, Float2d, Int2d, Positive
+from pygge.data_types import _is_2d, Float2d, Int2d, Positive, PositiveInt
 import numpy as np
 
 
@@ -214,3 +214,13 @@ class TestPositive(TestCase):
         with self.subTest("Divide"):
             with self.assertRaises(ValueError):
                 -2 / Positive(1, 1)
+
+
+class TestPositiveInt(TestCase):
+    def test_init(self):
+        with self.subTest("Int casting"):
+            self.assertEqual((1, 2), PositiveInt(1.3, 2.8))
+
+        with self.subTest("Must be positive"):
+            with self.assertRaises(ValueError):
+                PositiveInt(0, 1)

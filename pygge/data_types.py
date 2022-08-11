@@ -138,3 +138,15 @@ class Positive(Float2d):
     @is_positive
     def y(self, new_y):
         self._y = float(new_y)
+
+
+class PositiveInt(Float2d):
+    @Float2d.x.setter
+    @is_positive
+    def x(self, new_x):
+        self._x = int(new_x)
+
+    @Float2d.y.setter
+    @is_positive
+    def y(self, new_y):
+        self._y = int(new_y)
