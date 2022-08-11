@@ -117,20 +117,12 @@ class TwoDee:
 
 
 class Positive(TwoDee):
-    @property
-    def x(self):
-        return self._x
-
-    @x.setter
+    @TwoDee.x.setter
     @is_positive
     def x(self, new_x):
         self._x = float(new_x)
 
-    @property
-    def y(self):
-        return self._y
-
-    @y.setter
+    @TwoDee.y.setter
     @is_positive
     def y(self, new_y):
         self._y = float(new_y)
