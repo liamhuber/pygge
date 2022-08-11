@@ -3,7 +3,7 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 from unittest import TestCase
-from pygge.data_types import _is_2d, Float2d, Positive
+from pygge.data_types import _is_2d, Float2d, Int2d, Positive
 import numpy as np
 
 
@@ -187,6 +187,13 @@ class TestTwoDee(TestCase):
             with self.subTest(f"{fnc.__name__}: Scalar"):
                 self.assertEqual(result, fnc(td, scalar_other))
 
+    def test_astuple(self):
+        self.assertIsInstance(Float2d(0, 1).astuple(), tuple)
+
+
+class TestInt2d(TestCase):
+    def test_init(self):
+        self.assertEqual((1, 2), Int2d(1.3, 2.8))
 
 class TestPositive(TestCase):
     def test_init(self):

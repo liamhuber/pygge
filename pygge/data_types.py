@@ -115,6 +115,18 @@ class Float2d:
             other = float(other)
             return self.__class__(self.x // other, self.y // other)
 
+    def astuple(self):
+        return (self.x, self.y)
+
+
+class Int2d(Float2d):
+    @Float2d.x.setter
+    def x(self, new_x):
+        self._x = int(new_x)
+
+    @Float2d.y.setter
+    def y(self, new_y):
+        self._y = int(new_y)
 
 class Positive(Float2d):
     @Float2d.x.setter
