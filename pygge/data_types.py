@@ -17,7 +17,7 @@ def is_positive(fnc):
     return wrapper
 
 
-class TwoDee:
+class Float2d:
     def __init__(self, x, y=None):
         self._x = None
         self._y = None
@@ -116,13 +116,13 @@ class TwoDee:
             return self.__class__(self.x // other, self.y // other)
 
 
-class Positive(TwoDee):
-    @TwoDee.x.setter
+class Positive(Float2d):
+    @Float2d.x.setter
     @is_positive
     def x(self, new_x):
         self._x = float(new_x)
 
-    @TwoDee.y.setter
+    @Float2d.y.setter
     @is_positive
     def y(self, new_y):
         self._y = float(new_y)

@@ -3,7 +3,7 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 from unittest import TestCase
-from pygge.data_types import _is_2d, TwoDee, Positive
+from pygge.data_types import _is_2d, Float2d, Positive
 import numpy as np
 
 
@@ -24,25 +24,25 @@ class TestIs2d(TestCase):
 class TestTwoDee(TestCase):
     def test_init(self):
         with self.subTest("Two valid inputs"):
-            TwoDee(1, 2)
+            Float2d(1, 2)
 
         with self.subTest("One valid input"):
-            TwoDee(np.array([1, 2]))
+            Float2d(np.array([1, 2]))
 
         with self.subTest("Wrong mis-match of input"):
             with self.assertRaises(TypeError):
-                TwoDee([0, 1], 2)
+                Float2d([0, 1], 2)
 
         with self.subTest("Wrong length"):
             with self.assertRaises(TypeError):
-                TwoDee((1, 2, 3))
+                Float2d((1, 2, 3))
 
         with self.subTest("Nonsense"):
             with self.assertRaises(ValueError):
-                TwoDee("Threeve")
+                Float2d("Threeve")
 
     def test_equals(self):
-        td = TwoDee(-1, 1)
+        td = Float2d(-1, 1)
         with self.subTest("Numerics"):
             self.assertEqual(td, (-1, 1))
             self.assertNotEqual(td, (0, 0))
@@ -61,7 +61,7 @@ class TestTwoDee(TestCase):
     @staticmethod
     def _build_other_types(other):
         return (
-            ("TwoDee", TwoDee(*other)),
+            ("Float2d", Float2d(*other)),
             ("Tuple", other),
             ("List", list(other)),
             # ("Array", np.array(other)),
@@ -70,7 +70,7 @@ class TestTwoDee(TestCase):
         )
 
     def test_additive(self):
-        td = TwoDee(-1, 1)
+        td = Float2d(-1, 1)
         other = (1, 2)
         add_result = (0, 3)
         sub_result = (-2, -1)
@@ -122,7 +122,7 @@ class TestTwoDee(TestCase):
                 self.assertEqual(result, fnc(td, scalar_other))
 
     def test_multiplicative(self):
-        td = TwoDee(-10, 7)
+        td = Float2d(-10, 7)
         other = (4, 5)
         mul_result = (-40, 35)
         div_result = (-2.5, 1.4)
