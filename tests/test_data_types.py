@@ -3,7 +3,7 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 from unittest import TestCase
-from pygge.data_types import _is_2d, Float2d, Int2d, Positive, PositiveInt
+from pygge.data_types import is_2d, Float2d, Int2d, PositiveFloat, PositiveInt
 import numpy as np
 
 
@@ -18,10 +18,10 @@ class TestIs2d(TestCase):
         ):
             for x in collection:
                 with self.subTest(x.__class__.__name__):
-                    self.assertEqual(truth, _is_2d(x))
+                    self.assertEqual(truth, is_2d(x))
 
 
-class TestTwoDee(TestCase):
+class TestFloat2d(TestCase):
     def test_init(self):
         with self.subTest("Two valid inputs"):
             Float2d(1, 2)
@@ -190,30 +190,37 @@ class TestTwoDee(TestCase):
     def test_astuple(self):
         self.assertIsInstance(Float2d(0, 1).astuple(), tuple)
 
+    def test_asarray(self):
+        self.assertIsInstance(Float2d(0, 1).asarray(), np.ndarray)
+
+    def test_aslist(self):
+        self.assertIsInstance(Float2d(0, 1).aslist(), list)
+
 
 class TestInt2d(TestCase):
     def test_init(self):
         self.assertEqual((1, 2), Int2d(1.3, 2.8))
 
+
 class TestPositive(TestCase):
     def test_init(self):
-        Positive(1, 2)
+        PositiveFloat(1, 2)
 
         with self.assertRaises(ValueError):
-            Positive(0, 1)
+            PositiveFloat(0, 1)
 
     def test_math(self):
         with self.subTest("Subtract"):
             with self.assertRaises(ValueError):
-                Positive(1, 1) - 2
+                PositiveFloat(1, 1) - 2
 
         with self.subTest("Multiply"):
             with self.assertRaises(ValueError):
-                Positive(1, 1) * 0
+                PositiveFloat(1, 1) * 0
 
         with self.subTest("Divide"):
             with self.assertRaises(ValueError):
-                -2 / Positive(1, 1)
+                -2 / PositiveFloat(1, 1)
 
 
 class TestPositiveInt(TestCase):
@@ -224,3 +231,4 @@ class TestPositiveInt(TestCase):
         with self.subTest("Must be positive"):
             with self.assertRaises(ValueError):
                 PositiveInt(0, 1)
+

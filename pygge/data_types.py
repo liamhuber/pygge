@@ -1,27 +1,18 @@
+from __future__ import annotations
 import numpy as np
+from typing import Tuple, List
+from abc import ABC, abstractmethod
 
 
-def _is_2d(x):
+def is_2d(x):
     return hasattr(x, '__len__') and len(x) == 2
 
 
-def _is_positive(x):
-    if np.any(x <= 0):
-        raise ValueError(f"Only strictly positive values allowed, but got {x}")
-
-
-def is_positive(fnc):
-    def wrapper(self, x):
-        _is_positive(x)
-        return fnc(self, x)
-    return wrapper
-
-
-class Float2d:
+class TwoTuple(ABC):
     def __init__(self, x, y=None):
         self._x = None
         self._y = None
-        if _is_2d(x) and y is None:
+        if is_2d(x) and y is None:
             self.x, self.y = x
         else:
             self.x = x
@@ -32,18 +23,20 @@ class Float2d:
         return self._x
 
     @x.setter
+    @abstractmethod
     def x(self, new_x):
-        self._x = float(new_x)
+        pass
 
     @property
     def y(self):
         return self._y
 
     @y.setter
+    @abstractmethod
     def y(self, new_y):
-        self._y = float(new_y)
+        pass
 
-    def __len__(self):
+    def __len__(self) -> int:
         return 2
 
     def __repr__(self):
@@ -58,13 +51,13 @@ class Float2d:
             raise KeyError("Only 0 and 1 indexes (x and y) are taken")
 
     def __eq__(self, other):
-        if _is_2d(other):
+        if is_2d(other):
             return np.isclose(other[0], self.x) and np.isclose(other[1], self.y)
         else:
             raise TypeError(f"Expected comparison to something with length 2, but got {other}")
 
     def __add__(self, other):
-        if _is_2d(other):
+        if is_2d(other):
             return self.__class__(self.x + other[0], self.y + other[1])
         else:
             return self.__class__(self.x + other, self.y + other)
@@ -73,19 +66,19 @@ class Float2d:
         return self.__add__(other)
 
     def __sub__(self, other):
-        if _is_2d(other):
+        if is_2d(other):
             return self.__class__(self.x - other[0], self.y - other[1])
         else:
             return self.__class__(self.x - other, self.y - other)
 
     def __rsub__(self, other):
-        if _is_2d(other):
+        if is_2d(other):
             return self.__class__(other[0] - self.x, other[1] - self.y)
         else:
             return self.__class__(other - self.x, other - self.y)
 
     def __mul__(self, other):
-        if _is_2d(other):
+        if is_2d(other):
             return self.__class__(self.x * other[0], self.y * other[1])
         else:
             other = float(other)
@@ -95,58 +88,91 @@ class Float2d:
         return self.__mul__(other)
 
     def __truediv__(self, other):
-        if _is_2d(other):
+        if is_2d(other):
             return self.__class__(self.x / other[0], self.y / other[1])
         else:
             other = float(other)
             return self.__class__(self.x / other, self.y / other)
 
     def __rtruediv__(self, other):
-        if _is_2d(other):
+        if is_2d(other):
             return self.__class__(other[0] / self.x, other[1] / self.y)
         else:
             other = float(other)
             return self.__class__(other / self.x, other / self.y)
 
     def __floordiv__(self, other):
-        if _is_2d(other):
+        if is_2d(other):
             return self.__class__(self.x // other[0], self.y // other[1])
         else:
             other = float(other)
             return self.__class__(self.x // other, self.y // other)
 
-    def astuple(self):
-        return (self.x, self.y)
+    def astuple(self) -> Tuple:
+        return self.x, self.y
+
+    def asarray(self) -> np.ndarray:
+        return np.array([self.x, self.y])
+
+    def aslist(self) -> List:
+        return [self.x, self.y]
 
 
-class Int2d(Float2d):
-    @Float2d.x.setter
-    def x(self, new_x):
-        self._x = int(new_x)
+class Float2d(TwoTuple):
 
-    @Float2d.y.setter
-    def y(self, new_y):
-        self._y = int(new_y)
-
-class Positive(Float2d):
-    @Float2d.x.setter
-    @is_positive
+    @TwoTuple.x.setter
     def x(self, new_x):
         self._x = float(new_x)
 
-    @Float2d.y.setter
-    @is_positive
+    @TwoTuple.y.setter
     def y(self, new_y):
         self._y = float(new_y)
 
 
-class PositiveInt(Float2d):
-    @Float2d.x.setter
-    @is_positive
+class Int2d(TwoTuple):
+    @TwoTuple.x.setter
     def x(self, new_x):
         self._x = int(new_x)
 
+    @TwoTuple.y.setter
+    def y(self, new_y):
+        self._y = int(new_y)
+
+
+class Positive(TwoTuple, ABC):
+    @staticmethod
+    def _is_positive(x):
+        if np.any(x <= 0):
+            raise ValueError(f"Only strictly positive values allowed, but got {x}")
+
+    @classmethod
+    def is_positive(cls, fnc):
+        def wrapper(self, x):
+            cls._is_positive(x)
+            return fnc(self, x)
+
+        return wrapper
+
+
+class PositiveFloat(Float2d, Positive):
+    @Float2d.x.setter
+    @Positive.is_positive
+    def x(self, new_x):
+        self._x = float(new_x)
+
     @Float2d.y.setter
-    @is_positive
+    @Positive.is_positive
+    def y(self, new_y):
+        self._y = float(new_y)
+
+
+class PositiveInt(Int2d, Positive):
+    @Int2d.x.setter
+    @Positive.is_positive
+    def x(self, new_x):
+        self._x = int(new_x)
+
+    @Int2d.y.setter
+    @Positive.is_positive
     def y(self, new_y):
         self._y = int(new_y)
