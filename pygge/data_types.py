@@ -117,12 +117,16 @@ class TwoTuple(ABC):
     def aslist(self) -> List:
         return [self.x, self.y]
 
-    def clamp(self, max_, min_=None):
-        clamped = (min(self.x, max_[0]), min(self.y, max_[1]))
+    def clamp(self, min_=None, max_=None):
+        if min_ is None and max_ is None:
+            raise ValueError("Please provide at least one of min_ or max_ clamp values")
+        clamped = self.astuple()
         if min_ is not None:
-
             clamped = (max(clamped[0], min_[0]), max(clamped[1], min_[1]))
+        if max_ is not None:
+            clamped = (min(clamped[0], max_[0]), min(clamped[1], max_[1]))
         return self.__class__(clamped)
+
 
 class Float2d(TwoTuple):
 
