@@ -196,6 +196,14 @@ class TestFloat2d(TestCase):
     def test_aslist(self):
         self.assertIsInstance(Float2d(0, 1).aslist(), list)
 
+    def test_clamp(self):
+        td = Float2d(1, 3)
+        with self.subTest("Max only"):
+            self.assertEqual(td.clamp((2, 2)), (1, 2))
+
+        with self.subTest("Min and max"):
+            self.assertEqual(td.clamp(max_=(2, 2), min_=(2, 2)), (2, 2))
+
 
 class TestInt2d(TestCase):
     def test_init(self):
