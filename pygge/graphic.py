@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from pygge.abc import GraphicCore, HasParent
 from pygge.data_types import Int2d, PositiveInt
+from pygge.parent import HasChildren
 from PIL import Image
 import numpy as np
 from typing import Tuple, Optional, Literal
-
-from pygge.parent import HasChildren
 
 
 class IsChild(GraphicCore, HasParent):
