@@ -1,50 +1,28 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Literal
+from typing import Optional, Literal, Tuple
 
-from pygge.data_types import PositiveInt, Int2d
+from pygge.data_types import Int2d
 
 
-class GraphicCore(ABC):
-    def __init__(
-            self,
-            size: PositiveInt,
-            color: str = '#0000',
-    ):
-        self._size = None
-        self.size = size
-        self.color = color
-        self._image = None
-
+class IsGraphic(ABC):
+    """For typing"""
     @property
-    def size(self) -> PositiveInt:
-        return self._size
-
-    @size.setter
-    def size(self, new_size):
-        if isinstance(new_size, PositiveInt):
-            self._size = new_size
-        else:
-            self._size = PositiveInt(new_size)
-
-    @property
-    def image(self):
-        if self._image is not None:
-            return self._image
-        else:
-            self.render()
-            return self._image
-
     @abstractmethod
-    def render(self):
+    def size(self):
+        pass
+
+    @property
+    @abstractmethod
+    def image(self):
         pass
 
 
-class HasParent:
+class HasParent(ABC):
     def __init__(
             self,
-            parent: GraphicCore = None,
+            parent: IsGraphic,
             position: Optional[Int2d] = None,
             anchor: Literal["upper left"] = "upper left",
             coordinate_frame: Literal["upper left", "center"] = "upper left"
@@ -56,6 +34,11 @@ class HasParent:
         self.coordinate_frame = coordinate_frame
 
     @property
+    @abstractmethod
+    def size(self):
+        pass
+
+    @property
     def position(self):
         return self._position
 
@@ -64,10 +47,40 @@ class HasParent:
         self._position = Int2d(new_pos)
 
     @property
-    def relative_position(self) -> Int2d:
+    def _relative_position(self) -> Int2d:
         if self.coordinate_frame == "upper left":
             return self.position
         elif self.coordinate_frame == "center":
             return self.position * (1, -1) + self.parent.size * 0.5
         else:
             raise ValueError(f"Coordinate frame '{self.coordinate_frame}' not recognized")
+
+    @property
+    def _numeric_anchor(self) -> Int2d:
+        if self.anchor == "upper left":
+            return Int2d(0, 0)
+        elif self.anchor == "center":
+            return Int2d(self.size * 0.5)
+        else:
+            raise ValueError(f"Anchor frame '{self.anchor}' not recognized")
+
+    @property
+    def position_on_parent(self) -> Int2d:
+        return self._relative_position - self._numeric_anchor
+
+    @property
+    def corner1(self) -> Int2d:
+        return self.position_on_parent
+
+    @property
+    def corner2(self) -> Int2d:
+        return self.position_on_parent + self.size
+
+    @property
+    def free_box(self) -> Tuple[int, int, int, int]:
+        return self.position_on_parent.astuple() + self.corner2.astuple()
+
+    @property
+    def clamped_box(self) -> Tuple[int, int, int, int]:
+        return self.position_on_parent.clamp(min_=(0, 0), max_=self.parent.size).astuple() + \
+               self.corner2.clamp(min_=(0, 0), max_=self.parent.size).astuple()

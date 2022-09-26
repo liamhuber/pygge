@@ -56,6 +56,31 @@ class TwoTuple(ABC):
         else:
             raise TypeError(f"Expected comparison to something with length 2, but got {other}")
 
+    def __lt__(self, other):
+        if is_2d(other):
+            return np.array([self.x < other[0], self.y < other[1]])
+        else:
+            raise TypeError(f"Expected comparison to something with length 2, but got {other}")
+
+    def __le__(self, other):
+        if is_2d(other):
+            return np.array([self.x <= other[0], self.y <= other[1]])
+        else:
+            raise TypeError(f"Expected comparison to something with length 2, but got {other}")
+
+    def __gt__(self, other):
+        if is_2d(other):
+            return np.array([self.x > other[0], self.y > other[1]])
+        else:
+            raise TypeError(f"Expected comparison to something with length 2, but got {other}")
+
+    def __ge__(self, other):
+        if is_2d(other):
+            return np.array([self.x >= other[0], self.y >= other[1]])
+        else:
+            raise TypeError(f"Expected comparison to something with length 2, but got {other}")
+
+
     def __add__(self, other):
         if is_2d(other):
             return self.__class__(self.x + other[0], self.y + other[1])

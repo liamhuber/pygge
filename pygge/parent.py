@@ -2,11 +2,11 @@ from __future__ import annotations
 
 
 class Adder:
-    def __init__(self, graphic: HasChildren):
-        self._graphic = graphic
+    def __init__(self, parent: HasChildren):
+        self._parent = parent
 
     def __call__(self, name: str, child):
-        self._graphic.children[name] = child
+        self._parent.children[name] = child
 
 
 class HasChildren:

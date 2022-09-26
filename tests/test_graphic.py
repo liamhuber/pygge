@@ -19,5 +19,7 @@ class TestGraphic(TestCase):
         g = Graphic((50, 100), color="white")
         g.add('green', Graphic((20, 20), position=(-10, -10), parent=g, color="green"))
         g.add('red', Graphic((20, 20), position=(40, 90), parent=g, color="red"))
+        g.text.text = "Foobar"
+        g.text.position.y = 0.5 * g.size.y
         g.image.show()
 
