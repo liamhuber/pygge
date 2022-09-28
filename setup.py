@@ -21,6 +21,7 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         'numpy>=1.18.1',
-        'pillow>=7.1.2'
+        'pillow>=7.1.2',
+        'traitlets'
     ]
 )

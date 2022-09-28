@@ -6,45 +6,43 @@ import numpy as np
 from textwrap import wrap as textwrap
 from pathlib import Path
 
-from pygge.data_types import Int2d
+from pygge.data_types import TwoTuple
 from pygge.abc import IsGraphic, HasParent
+from pygge.traitlets import FileTrait
+from traitlets import HasTraits, Unicode, Int, Bool
+from abc import ABC
 
 
-class Text(HasParent):
+class FontTrait(FileTrait):
+    default_value = str(Path(f"{__file__}").absolute().parent.parent.joinpath("resources/fonts/Roboto-Regular.ttf"))
+
+    def validate(self, obj, value):
+        value = self.default_value if value is None else value
+        return super().validate(obj, value)
+
+
+class Text(HasParent, HasTraits):
+    text = Unicode(default_value=None, allow_none=True)
+    font = FontTrait()
+    font_size = Int(default_value=12)
+    color = Unicode(default_value="black")
+    wrap = Bool(default_value=True)
+
     def __init__(
             self,
-            parent: IsGraphic,
-            position: Optional[Int2d] = None,
+            parent: Optional[IsGraphic] = None,
+            position: Optional[TwoTuple] = None,
             anchor: Literal["upper left"] = "upper left",
             coordinate_frame: Literal["upper left", "center"] = "upper left",
-            text: str = "",
+            text: Optional[str] = None,
             font: Optional[str] = None,
             font_size: int = 12,
             color: str = "black",
             wrap: bool = True,
     ):
-        super().__init__(parent=parent, position=position, anchor=anchor, coordinate_frame=coordinate_frame)
-        self.text = text
-        self._font = None
-        self.font = font
-        self.font_size = font_size
+        HasParent.__init__(self, parent=parent, position=position, anchor=anchor, coordinate_frame=coordinate_frame)
+        HasTraits.__init__(self, text=text, font=font, font_size=font_size, color=color, wrap=wrap)
         self._used_font_size = font_size
-        self.color = color
-        self.wrap = wrap
-
-    @property
-    def font(self):
-        return self._font if self._font is not None \
-            else str(Path(f"{__file__}").absolute().parent.parent.joinpath("resources/fonts/Roboto-Regular.ttf"))
-
-    @font.setter
-    def font(self, new_font):
-        # Use default if is None
-        if new_font is None:
-            new_font = None  # Up two, resources, fonts, Roboto-Regular.ttf
-        elif not Path(new_font).is_file():
-            raise ValueError(f"Font file {new_font} not found.")
-        self._font = new_font
 
     @property
     def draw(self):
@@ -119,10 +117,10 @@ class Text(HasParent):
             raise ValueError("{} is not always <= {}".format(size, bounds))
 
 
-class HasText(IsGraphic):
+class HasText(ABC):
     def __init__(
             self,
-            text_position: Optional[Int2d] = None,
+            text_position: Optional[TwoTuple] = None,
             text_anchor: Literal["upper left"] = "upper left",
             text_coordinate_frame: Literal["upper left", "center"] = "upper left",
             text: Optional[str] = None,
@@ -133,7 +131,7 @@ class HasText(IsGraphic):
     ):
         self._text = Text(
             parent=self,
-            position=text_position,
+            position=text_position if text_position is not None else (0, 0),
             anchor=text_anchor,
             coordinate_frame=text_coordinate_frame,
             text=text,

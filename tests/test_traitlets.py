@@ -3,48 +3,86 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 from unittest import TestCase
-from pygge.data_types import is_2d, TwoTuple
+from pygge.traitlets import Int2d, Float2d, PositiveInt
+from pygge.data_types import TwoTuple
 import numpy as np
+from traitlets import HasTraits, TraitError
 
 
-class TestIs2d(TestCase):
-    def test_stuff(self):
-        for collection, truth in zip(
-                (
-                        ([0, 1], (0, 1), np.array((0, 1))),
-                        (0, 1.0, np.array([0, 1, 2]))
-                ),
-                (True, False)
-        ):
-            for x in collection:
-                with self.subTest(x.__class__.__name__):
-                    self.assertEqual(truth, is_2d(x))
+class TestTwoTuppleTraits(TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.other_2d = {
+            "tuple": (1, 2),
+            "list":  [1, 2],
+            "array": np.array([1, 2])
+        }
+        cls.other_wrong = {
+            "type": "threeve",
+            "shape": np.array([[1, 2], [3, 4]]),
+            "length": (1, 2, 3)
+        }
 
+    def setUp(self):
+        class HasTestable(HasTraits):
+            int2d = Int2d()
+            float2d = Float2d(default_value=(0, 1.5))
+            pos2d = PositiveInt()
 
-class TestTwoTuple(TestCase):
-    def test_init(self):
-        with self.subTest("Two valid inputs"):
-            TwoTuple(1, 2)
+        self.ht = HasTestable()
+        self.other_ht = HasTestable()
 
-        with self.subTest("One valid input"):
-            TwoTuple(np.array([1, 2]))
+    def test_default(self):
+        self.assertEqual(self.ht.int2d, Int2d.default_value)
 
-        with self.subTest("Wrong length"):
+    def test_len(self):
+        self.assertEqual(2, len(self.ht.int2d))
+
+    def test_set(self):
+        for k, v in self.other_2d.items():
+            with self.subTest(f"Set to {k}"):
+                self.ht.int2d = v
+        with self.subTest("Set to self-like"):
+            self.ht.int2d = self.other_ht.float2d
+
+        for k, v in self.other_wrong.items():
+            with self.subTest(f"Fail to set to {k}"):
+                with self.assertRaises(TraitError):
+                    self.ht.int2d = v
+
+        with self.subTest("Set by index"):
             with self.assertRaises(TypeError):
-                TwoTuple((1, 2, 3))
-
-        with self.subTest("Nonsense"):
+                self.ht.int2d[0] = 1
+        with self.subTest("Set by attribute"):
             with self.assertRaises(TypeError):
-                TwoTuple("Threeve")
+                self.ht.int2d.x = 1
 
-    def test_equals(self):
-        td = TwoTuple(-1, 1)
+    def test_get(self):
+        self.ht.int2d = (1, 2)
+        self.assertEqual((1, 2), self.ht.int2d)
+        self.assertEqual(1, self.ht.int2d.x)
+        self.assertEqual(2, self.ht.int2d.y)
+        self.assertEqual(1, self.ht.int2d[0])
+        self.assertEqual(2, self.ht.int2d[1])
+
+    def test_casting(self):
+        self.assertIsInstance(self.ht.int2d, TwoTuple)
+        self.assertIsInstance(self.ht.int2d.astuple(), tuple)
+        self.assertIsInstance(self.ht.int2d.aslist(), list)
+        self.assertIsInstance(self.ht.int2d.asarray(), np.ndarray)
+
+    def test_type_preservation(self):
+        raise NotImplementedError
+
+    def test_equality(self):
+        td = self.ht.int2d
+
         with self.subTest("Numerics"):
-            self.assertEqual(td, (-1, 1))
-            self.assertNotEqual(td, (0, 0))
+            self.assertEqual(td, (0, 0))
+            self.assertNotEqual(td, (1, 0))
 
         with self.subTest("Floating point"):
-            self.assertEqual(td, (-1 + 1e-8, 1))
+            self.assertEqual(td, (0, 1e-8))
 
         with self.subTest("Wrong length"):
             with self.assertRaises(TypeError):
@@ -54,19 +92,25 @@ class TestTwoTuple(TestCase):
             with self.assertRaises(TypeError):
                 td == 5
 
-    @staticmethod
-    def _build_other_types(other):
+    def test_inequality(self):
+        raise NotImplementedError
+
+    def _build_other_types(self, other):
+        self.other_ht.int2d = other
+        self.other_ht.float2d = other
         return (
-            ("TwoTuple", TwoTuple(*other)),
-            ("Tuple", other),
-            ("List", list(other)),
+            ("int2d", self.other_ht.int2d),
+            ("float2d", self.other_ht.float2d),
+            ("tuple", other),
+            ("list", list(other)),
             # ("Array", np.array(other)),
             # ("Floaty", np.array(other) + 1e-8),
             # I multiply numpy fine, but numpy behaves poorly when it comes first.
         )
 
     def test_additive(self):
-        td = TwoTuple(-1, 1)
+        self.ht.int2d = (-1, 1)
+        td = self.ht.int2d
         other = (1, 2)
         add_result = (0, 3)
         sub_result = (-2, -1)
@@ -118,7 +162,8 @@ class TestTwoTuple(TestCase):
                 self.assertEqual(result, fnc(td, scalar_other))
 
     def test_multiplicative(self):
-        td = TwoTuple(-10, 7)
+        self.ht.float2d = (-10, 7)
+        td = self.ht.float2d
         other = (4, 5)
         mul_result = (-40, 35)
         div_result = (-2.5, 1.4)
@@ -183,17 +228,9 @@ class TestTwoTuple(TestCase):
             with self.subTest(f"{fnc.__name__}: Scalar"):
                 self.assertEqual(result, fnc(td, scalar_other))
 
-    def test_astuple(self):
-        self.assertIsInstance(TwoTuple(0, 1).astuple(), tuple)
-
-    def test_asarray(self):
-        self.assertIsInstance(TwoTuple(0, 1).asarray(), np.ndarray)
-
-    def test_aslist(self):
-        self.assertIsInstance(TwoTuple(0, 1).aslist(), list)
-
     def test_clamp(self):
-        td = TwoTuple(1, 3)
+        self.ht.float2d = (1, 3)
+        td = self.ht.float2d
         with self.subTest("Min only"):
             self.assertEqual(td.clamp(min_=(2, 2)), (2, 3))
 
@@ -206,3 +243,18 @@ class TestTwoTuple(TestCase):
         with self.subTest("No limits"):
             with self.assertRaises(ValueError):
                 td.clamp()
+
+    def test_positive_math(self):
+        print(self.ht.__dir__())
+        print(self.ht.int2d)
+        # with self.subTest("Subtract"):
+        #     with self.assertRaises(ValueError):
+        #         self.ht.positive - 2
+        #
+        # with self.subTest("Multiply"):
+        #     with self.assertRaises(ValueError):
+        #         self.ht.positive * 0
+        #
+        # with self.subTest("Divide"):
+        #     with self.assertRaises(ValueError):
+        #         -2 / self.ht.positive

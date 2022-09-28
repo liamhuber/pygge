@@ -1,46 +1,46 @@
-from __future__ import annotations
+# coding: utf-8
+# Copyright (c) Liam Huber
+# Distributed under the terms of "New BSD License", see the LICENSE file.
+
 import numpy as np
-from typing import Tuple, List
-from abc import ABC, abstractmethod
 
 
 def is_2d(x):
     return hasattr(x, '__len__') and len(x) == 2
 
 
-class TwoTuple(ABC):
+class TwoTuple:
+    """
+    In principle, works as a two-length tuple with any two elements, but comes with a bunch of bells and whistles to do
+    math with other two-length objects as long as this object and that object both have scalar elements.
+    """
     def __init__(self, x, y=None):
-        self._x = None
-        self._y = None
-        if is_2d(x) and y is None:
-            self.x, self.y = x
+        if y is None:
+            if is_2d(x):
+                self._x, self._y = x
+            else:
+                raise TypeError(f"Expected x to be 2D when y is None, but got {x}")
         else:
-            self.x = x
-            self.y = y
+            self._x = x
+            self._y = y
+
+        self._setting_error = TypeError("Cannot set components individually.")
 
     @property
     def x(self):
         return self._x
 
     @x.setter
-    @abstractmethod
     def x(self, new_x):
-        pass
+        raise self._setting_error
 
     @property
     def y(self):
         return self._y
 
     @y.setter
-    @abstractmethod
     def y(self, new_y):
-        pass
-
-    def __len__(self) -> int:
-        return 2
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.x}, {self.y})"
+        raise self._setting_error
 
     def __getitem__(self, item):
         if item == 0:
@@ -49,6 +49,15 @@ class TwoTuple(ABC):
             return self.y
         else:
             raise KeyError("Only 0 and 1 indexes (x and y) are taken")
+
+    def __setitem__(self, key, value):
+        raise self._setting_error
+
+    def __len__(self) -> int:
+        return 2
+
+    def __repr__(self):
+        return f"({self.x}, {self.y})"
 
     def __eq__(self, other):
         if is_2d(other):
@@ -60,26 +69,25 @@ class TwoTuple(ABC):
         if is_2d(other):
             return np.array([self.x < other[0], self.y < other[1]])
         else:
-            raise TypeError(f"Expected comparison to something with length 2, but got {other}")
+            return self.x < other and self.y < other
 
     def __le__(self, other):
         if is_2d(other):
             return np.array([self.x <= other[0], self.y <= other[1]])
         else:
-            raise TypeError(f"Expected comparison to something with length 2, but got {other}")
+            return self.x <= other and self.y <= other
 
     def __gt__(self, other):
         if is_2d(other):
             return np.array([self.x > other[0], self.y > other[1]])
         else:
-            raise TypeError(f"Expected comparison to something with length 2, but got {other}")
+            return self.x > other and self.y > other
 
     def __ge__(self, other):
         if is_2d(other):
             return np.array([self.x >= other[0], self.y >= other[1]])
         else:
-            raise TypeError(f"Expected comparison to something with length 2, but got {other}")
-
+            return self.x >= other and self.y >= other
 
     def __add__(self, other):
         if is_2d(other):
@@ -133,13 +141,13 @@ class TwoTuple(ABC):
             other = float(other)
             return self.__class__(self.x // other, self.y // other)
 
-    def astuple(self) -> Tuple:
+    def astuple(self) -> tuple:
         return self.x, self.y
 
     def asarray(self) -> np.ndarray:
         return np.array([self.x, self.y])
 
-    def aslist(self) -> List:
+    def aslist(self) -> list:
         return [self.x, self.y]
 
     def clamp(self, min_=None, max_=None):
@@ -151,63 +159,3 @@ class TwoTuple(ABC):
         if max_ is not None:
             clamped = (min(clamped[0], max_[0]), min(clamped[1], max_[1]))
         return self.__class__(clamped)
-
-
-class Float2d(TwoTuple):
-
-    @TwoTuple.x.setter
-    def x(self, new_x):
-        self._x = float(new_x)
-
-    @TwoTuple.y.setter
-    def y(self, new_y):
-        self._y = float(new_y)
-
-
-class Int2d(TwoTuple):
-    @TwoTuple.x.setter
-    def x(self, new_x):
-        self._x = int(new_x)
-
-    @TwoTuple.y.setter
-    def y(self, new_y):
-        self._y = int(new_y)
-
-
-class Positive(TwoTuple, ABC):
-    @staticmethod
-    def _is_positive(x):
-        if np.any(x <= 0):
-            raise ValueError(f"Only strictly positive values allowed, but got {x}")
-
-    @classmethod
-    def is_positive(cls, fnc):
-        def wrapper(self, x):
-            cls._is_positive(x)
-            return fnc(self, x)
-
-        return wrapper
-
-
-class PositiveFloat(Float2d, Positive):
-    @Float2d.x.setter
-    @Positive.is_positive
-    def x(self, new_x):
-        self._x = float(new_x)
-
-    @Float2d.y.setter
-    @Positive.is_positive
-    def y(self, new_y):
-        self._y = float(new_y)
-
-
-class PositiveInt(Int2d, Positive):
-    @Int2d.x.setter
-    @Positive.is_positive
-    def x(self, new_x):
-        self._x = int(new_x)
-
-    @Int2d.y.setter
-    @Positive.is_positive
-    def y(self, new_y):
-        self._y = int(new_y)
