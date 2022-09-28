@@ -4,7 +4,7 @@
 
 import unittest
 import numpy as np
-from pygge.descriptors import PILArray, MangledDescriptor, TwoDee, Positive, Alignment
+from pygge._descriptors import PILArray, MangledDescriptor, TwoDee, Positive, Alignment
 
 
 class Foo:

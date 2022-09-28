@@ -4,7 +4,7 @@
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from . descriptors import Positive, TwoDee, PILArray, Alignment
+from . _descriptors import Positive, TwoDee, PILArray, Alignment
 from types import MethodType
 from textwrap import wrap as textwrap
 from copy import deepcopy

@@ -3,11 +3,11 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 import numpy as np
-from pygge.core import Graphic, Text, Picture
+from pygge._core import Graphic, Text, Picture
 from abc import abstractmethod
 from PIL import Image, ImageDraw
 
-from pygge.descriptors import Positive
+from pygge._descriptors import Positive
 
 """
 Convenience base class for making graphics with particular geometric shapes.

@@ -3,7 +3,7 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 from PIL import Image, ImageDraw
-from .. shapes import Shape, Hex, Rectangle, Ellipse
+from .. _shapes import Shape, Hex, Rectangle, Ellipse
 from abc import abstractmethod
 import numpy as np
 
@@ -23,7 +23,7 @@ __date__ = "May 28, 2020"
 def magnetic_map(shape, color='green', orientable=True, endpoint='n'):
     """
     Args:
-        shape (pygge.shapes.Shape): The shape to generate a magnetic map for
+        shape (pygge._shapes.Shape): The shape to generate a magnetic map for
         color ('green'/'blue'/'red'): Map colour. Green is no alteration, blue forces back-up, red forces front-up.
             (Default is 'green').
         orientable (bool): Whether to draw the orienting vector. (Default is True.)

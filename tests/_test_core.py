@@ -3,8 +3,8 @@
 # Distributed under the terms of "New BSD License", see the LICENSE file.
 
 import unittest
-from pygge.core import Graphic, Children, Picture, Text
-from pygge.descriptors import PILArray
+from pygge._core import Graphic, Children, Picture, Text
+from pygge._descriptors import PILArray
 import numpy as np
 from PIL import Image
 from os import remove as osremove
