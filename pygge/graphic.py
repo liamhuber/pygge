@@ -48,8 +48,7 @@ class Graphic(IsGraphic, HasParent, HasChildren, HasText):  # HasSprite
         self.text.font_size = text_font_size
         self.text.color = text_color
         self.text.wrap = text_wrap
-
-
+        # Similar for sprite
 
     def render(self):
         self._image = Image.new("RGBA", self.size.astuple(), self.color)
