@@ -76,7 +76,11 @@ class Adder:
         self._parent = parent
 
     def __call__(self, name: str, child):
+        if name in self._parent.__dict__:
+            raise ValueError(f"The name {name} is already used as an attribute of the parent {self._parent}")
+        child.parent = self._parent
         self._parent.children[name] = child
+        setattr(self._parent, name, child)
 
 
 class HasChildren(Traited, ABC):
