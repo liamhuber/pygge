@@ -1,52 +1,24 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Literal, Tuple
+from typing import Tuple
 
+from traitlets import Instance, Dict
+
+from pygge.base import IsGraphic, Traited
 from pygge.data_types import TwoTuple
-from pygge.traitlets import Int2d, PositiveInt, ImageTrait, Anchor, CoordinateFrame
-from traitlets import HasTraits, Instance
+from pygge.traitlets import Int2d, Anchor, CoordinateFrame
 
 
-class MetaTraited(type(HasTraits), type(ABC)):
-    pass
-
-
-class IsGraphic(HasTraits, ABC, metaclass=MetaTraited):
-    """For typing"""
-    size = PositiveInt()
-    _image = ImageTrait()
-
-    def __init__(self, size):
-        HasTraits.__init__(self, size=size)
-
-    @property
-    def image(self):
-        if self._image is None:
-            self.render()
-        return self._image
-
-    @abstractmethod
-    def render(self):
-        pass
-
-
-class HasParent(HasTraits, ABC, metaclass=MetaTraited):
+class HasParent(Traited, ABC):
     parent = Instance(klass=IsGraphic, allow_none=True, default_value=None)
     position = Int2d(allow_none=True)
     anchor = Anchor()
     coordinate_frame = CoordinateFrame()
 
-    def __init__(
-            self,
-            parent: Optional[IsGraphic] = None,
-            position: Optional[Int2d] = None,
-            anchor: Literal["upper left"] = "upper left",
-            coordinate_frame: Literal["upper left", "center"] = "upper left"
-    ):
-        if parent is not None and position is None:
+    def initialize(self, *args, **kwargs):
+        if self.parent is not None and self.position is None:
             raise TypeError("Objects with a parent must also provide a position, but got None")
-        HasTraits.__init__(self, parent=parent, position=position, anchor=anchor, coordinate_frame=coordinate_frame)
 
     @property
     @abstractmethod
@@ -97,3 +69,25 @@ class HasParent(HasTraits, ABC, metaclass=MetaTraited):
     def clamped_box(self) -> Tuple[int, int, int, int]:
         return self.position_on_parent.clamp(min_=(0, 0), max_=self.parent.size).astuple() + \
                self.corner2.clamp(min_=(0, 0), max_=self.parent.size).astuple()
+
+
+class Adder:
+    def __init__(self, parent: HasChildren):
+        self._parent = parent
+
+    def __call__(self, name: str, child):
+        self._parent.children[name] = child
+
+
+class HasChildren(Traited, ABC):
+    children = Dict(default_value={}, read_only=True)
+
+    def initialize(self):
+        self._adder = Adder(self)
+
+    @property
+    def add(self):
+        return self._adder
+
+    def remove(self, key):
+        return self.children.pop(key)

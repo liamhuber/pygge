@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Optional, Literal
 
 from pygge.data_types import TwoTuple
-from pygge.abc import IsGraphic, HasParent
+from pygge.base import IsGraphic
+from pygge.mixins.family import HasParent
 from pygge.traitlets import Int2d, FileTrait
 from traitlets import HasTraits, Bool
 from abc import ABC

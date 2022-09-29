@@ -1,48 +1,25 @@
 from __future__ import annotations
 
-from typing import Optional, Literal
 from PIL import ImageDraw, ImageFont
 import numpy as np
 from textwrap import wrap as textwrap
-from pathlib import Path
 
-from pygge.data_types import TwoTuple
-from pygge.abc import IsGraphic, HasParent
-from pygge.traitlets import FileTrait
-from traitlets import HasTraits, Unicode, Int, Bool
-from abc import ABC
-
-
-class FontTrait(FileTrait):
-    default_value = str(Path(f"{__file__}").absolute().parent.parent.joinpath("resources/fonts/Roboto-Regular.ttf"))
-
-    def validate(self, obj, value):
-        value = self.default_value if value is None else value
-        return super().validate(obj, value)
+from pygge.mixins.family import HasParent
+from pygge.traitlets import FontTrait
+from pygge.base import Traited
+from traitlets import Unicode, Int, Bool
+from abc import ABC, abstractmethod
 
 
-class Text(HasParent, HasTraits):
+class Text(HasParent):
     text = Unicode(default_value=None, allow_none=True)
     font = FontTrait()
     font_size = Int(default_value=12)
     color = Unicode(default_value="black")
     wrap = Bool(default_value=True)
 
-    def __init__(
-            self,
-            parent: Optional[IsGraphic] = None,
-            position: Optional[TwoTuple] = None,
-            anchor: Literal["upper left"] = "upper left",
-            coordinate_frame: Literal["upper left", "center"] = "upper left",
-            text: Optional[str] = None,
-            font: Optional[str] = None,
-            font_size: int = 12,
-            color: str = "black",
-            wrap: bool = True,
-    ):
-        HasParent.__init__(self, parent=parent, position=position, anchor=anchor, coordinate_frame=coordinate_frame)
-        HasTraits.__init__(self, text=text, font=font, font_size=font_size, color=color, wrap=wrap)
-        self._used_font_size = font_size
+    def initialize(self):
+        self._used_font_size = self.font_size
 
     @property
     def draw(self):
@@ -77,7 +54,6 @@ class Text(HasParent, HasTraits):
             (PIL.ImageFont.FreeTypeFont): The appropriately sized font.
         """
         font_size = self.font_size
-        print(self.font)
         while True:
             font = ImageFont.truetype(self.font, size=font_size)
             wrapped, wrapped_size = self._fit_width(font)
@@ -117,30 +93,20 @@ class Text(HasParent, HasTraits):
             raise ValueError("{} is not always <= {}".format(size, bounds))
 
 
-class HasText(ABC):
-    def __init__(
-            self,
-            text_position: Optional[TwoTuple] = None,
-            text_anchor: Literal["upper left"] = "upper left",
-            text_coordinate_frame: Literal["upper left", "center"] = "upper left",
-            text: Optional[str] = None,
-            text_font: Optional[str] = None,
-            text_font_size: int = 12,
-            text_color: str = "black",
-            text_wrap: bool = True,
-    ):
-        self._text = Text(
-            parent=self,
-            position=text_position if text_position is not None else (0, 0),
-            anchor=text_anchor,
-            coordinate_frame=text_coordinate_frame,
-            text=text,
-            font=text_font,
-            font_size=text_font_size,
-            color=text_color,
-            wrap=text_wrap
-        )
+class HasText(Traited, ABC):
+    def initialize(self):
+        self._text = Text(parent=self)
 
     @property
     def text(self):
         return self._text
+
+    @property
+    @abstractmethod
+    def size(self):
+        pass
+
+    @property
+    @abstractmethod
+    def image(self):
+        pass

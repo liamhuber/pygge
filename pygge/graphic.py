@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-
-from pygge.abc import IsGraphic, HasParent
-from pygge.traitlets import Int2d, PositiveInt
-from pygge.parent import HasChildren
-from pygge.text import HasText
-from traitlets import HasTraits, Unicode
+from pygge.base import IsGraphic
+from pygge.mixins import HasParent, HasChildren, HasSprite, HasText
+from pygge.traitlets import Int2d
+from traitlets import Unicode
 from PIL import Image
 import numpy as np
 from typing import Optional, Literal
 
 
-class Graphic(IsGraphic, HasParent, HasChildren, HasText, HasTraits):  # HasSprite
+class Graphic(IsGraphic, HasParent, HasChildren, HasText):  # HasSprite
     """
     Example:
         >>> graphic = Graphic(
@@ -31,11 +28,7 @@ class Graphic(IsGraphic, HasParent, HasChildren, HasText, HasTraits):  # HasSpri
 
     def __init__(
             self,
-            size: PositiveInt,
-            parent: Optional[Graphic] = None,
-            position: Optional[Int2d] = None,
-            anchor: Literal["upper left"] = "upper left",
-            coordinate_frame: Literal["upper left", "center"] = "upper left",
+            *args,
             text_position: Optional[Int2d] = None,
             text_anchor: Literal["upper left"] = "upper left",
             text_coordinate_frame: Literal["upper left", "center"] = "upper left",
@@ -44,39 +37,29 @@ class Graphic(IsGraphic, HasParent, HasChildren, HasText, HasTraits):  # HasSpri
             text_font_size: int = 12,
             text_color: str = "black",
             text_wrap: bool = True,
-            color: str = '#0000',
+            **kwargs
     ):
-        IsGraphic.__init__(self, size=size)
-        HasParent.__init__(
-            self,
-            parent=parent,
-            position=position,
-            anchor=anchor,
-            coordinate_frame=coordinate_frame
-        )
-        HasChildren.__init__(self)
-        HasText.__init__(
-            self,
-            text_position=text_position,
-            text_anchor=text_anchor,
-            text_coordinate_frame=text_coordinate_frame,
-            text=text,
-            text_font=text_font,
-            text_font_size=text_font_size,
-            text_color=text_color,
-            text_wrap=text_wrap,
-        )
-        HasTraits.__init__(self, color=color)
+        super().__init__(*args, **kwargs)
+        self.text.position = text_position if text_position is not None else self.text.position
+        self.text.anchor = text_anchor
+        self.text.coordinate_frame = text_coordinate_frame
+        self.text.text = text
+        self.text.font = text_font if text_font is not None else self.text.font
+        self.text.font_size = text_font_size
+        self.text.color = text_color
+        self.text.wrap = text_wrap
+
+
 
     def render(self):
         self._image = Image.new("RGBA", self.size.astuple(), self.color)
         self.text.render()
         for child in self.children.values():
-            child.render()
-            cropped_image = child.crop()
+            cropped_image = child.cropped_image
             self.image.paste(cropped_image, box=child.clamped_box, mask=cropped_image)
 
-    def crop(self):
+    @property
+    def cropped_image(self):
         cropping_offset = np.array(self.clamped_box) - np.array(self.free_box)
         image = self.image
         if np.any(cropping_offset != 0):
